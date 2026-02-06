@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { S3Module } from './common/services/s3.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     ClientsModule,
     WorkOrdersModule,
     AuthModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

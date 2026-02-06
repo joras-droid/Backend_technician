@@ -11,7 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const users_service_1 = require("./users.service");
+const jwt_auth_guard_1 = require("./auth/guards/jwt-auth.guard");
 let UsersController = class UsersController {
     usersService;
     constructor(usersService) {
@@ -24,12 +26,37 @@ let UsersController = class UsersController {
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Get)('technicians'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get all technicians',
+        description: 'Retrieve a list of all users with TECHNICIAN role',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'List of technicians',
+        schema: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    firstName: { type: 'string' },
+                    lastName: { type: 'string' },
+                    email: { type: 'string' },
+                    role: { type: 'string', enum: ['TECHNICIAN'] },
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "getTechnicians", null);
 exports.UsersController = UsersController = __decorate([
+    (0, swagger_1.ApiTags)('users'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.Controller)('users'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [users_service_1.UsersService])
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map

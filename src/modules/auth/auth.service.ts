@@ -3,8 +3,9 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignUpDto, SignInDto } from '../../common/dto/auth.dto';
@@ -21,15 +22,27 @@ export class AuthService {
   async signUp(signUpDto: SignUpDto) {
     const { password, email, username, ...rest } = signUpDto;
 
-    // Check if user already exists
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { username }],
-      },
+    // Check if email is whitelisted
+    const whitelistedUser = await this.prisma.user.findUnique({
+      where: { email },
     });
 
-    if (existingUser) {
-      throw new ConflictException('User with this email or username already exists');
+    if (!whitelistedUser || !whitelistedUser.whitelisted) {
+      throw new UnauthorizedException('Email is not whitelisted. Please contact administrator.');
+    }
+
+    // Check if account already exists (has password)
+    if (whitelistedUser.password) {
+      throw new ConflictException('User account already exists. Please sign in instead.');
+    }
+
+    // Check if username is already taken by another user
+    const existingUsername = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUsername && existingUsername.id !== whitelistedUser.id) {
+      throw new ConflictException('Username is already taken');
     }
 
     // Hash password
@@ -39,14 +52,15 @@ export class AuthService {
     );
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
-    const user = await this.prisma.user.create({
+    // Update whitelisted user with password and other details
+    const user = await this.prisma.user.update({
+      where: { email },
       data: {
         ...rest,
-        email,
         username,
         password: hashedPassword,
-        role: rest.role || UserRole.TECHNICIAN,
+        role: rest.role || whitelistedUser.role || UserRole.TECHNICIAN,
+        whitelisted: true, // Ensure it stays whitelisted
       },
       select: {
         id: true,
@@ -82,6 +96,11 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if email is whitelisted
+    if (!user.whitelisted) {
+      throw new UnauthorizedException('Your account is not authorized. Please contact administrator.');
     }
 
     // Verify password
@@ -125,15 +144,28 @@ export class AuthService {
   private async generateTokens(userId: string, role: UserRole) {
     const payload = { sub: userId, role };
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '7d'),
-    });
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '30d'),
-    });
+    if (!jwtSecret || !jwtRefreshSecret) {
+      throw new Error('JWT secrets are not configured');
+    }
+
+    const accessTokenExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN', '7d');
+    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '30d');
+
+    const accessTokenOptions: JwtSignOptions = {
+      secret: jwtSecret,
+      expiresIn: accessTokenExpiresIn as StringValue,
+    };
+
+    const refreshTokenOptions: JwtSignOptions = {
+      secret: jwtRefreshSecret,
+      expiresIn: refreshTokenExpiresIn as StringValue,
+    };
+
+    const accessToken = this.jwtService.sign(payload, accessTokenOptions);
+    const refreshToken = this.jwtService.sign(payload, refreshTokenOptions);
 
     return {
       accessToken,

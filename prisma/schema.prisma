@@ -22,7 +22,8 @@ model User {
   password      String   // hashed
   profileImageUrl String? // S3 URL for profile image
 
-  role      UserRole
+  role        UserRole
+  whitelisted Boolean  @default(false) // Only whitelisted emails can signup/signin
 
   workOrdersAssigned WorkOrder[] @relation("AssignedTechnician")
   timeEntries        TimeEntry[]

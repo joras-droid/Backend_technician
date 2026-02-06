@@ -21,10 +21,68 @@ let WorkOrdersService = class WorkOrdersService {
         return this.prisma.workOrder.findMany({
             where: { technicianId },
             orderBy: { scheduledAt: 'asc' },
+            include: {
+                attachments: true,
+                equipment: true,
+                client: true,
+                technician: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        phone: true,
+                    },
+                },
+            },
         });
     }
     findOne(id) {
-        return this.prisma.workOrder.findUnique({ where: { id } });
+        return this.prisma.workOrder.findUnique({
+            where: { id },
+            include: {
+                attachments: true,
+                equipment: true,
+                client: true,
+                technician: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        phone: true,
+                        profileImageUrl: true,
+                    },
+                },
+                timeEntries: {
+                    include: {
+                        technician: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+    async createAttachment(workOrderId, dto, userId) {
+        const workOrder = await this.prisma.workOrder.findUnique({
+            where: { id: workOrderId },
+        });
+        if (!workOrder) {
+            throw new common_1.NotFoundException('Work order not found');
+        }
+        return this.prisma.attachment.create({
+            data: {
+                workOrderId,
+                url: dto.url,
+                type: dto.type,
+                description: dto.description,
+            },
+        });
     }
 };
 exports.WorkOrdersService = WorkOrdersService;

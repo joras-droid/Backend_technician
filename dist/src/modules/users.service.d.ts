@@ -13,6 +13,8 @@ export declare class UsersService {
         address: string | null;
         username: string;
         password: string;
+        profileImageUrl: string | null;
         role: import(".prisma/client").$Enums.UserRole;
+        whitelisted: boolean;
     }[]>;
 }

@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { CustomValidationPipe } from './common/pipes/validation.pipe';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ErrorInterceptor } from './common/interceptors/error.interceptor';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,6 +33,46 @@ async function bootstrap() {
     origin: corsOrigin === '*' ? true : corsOrigin.split(','),
     credentials: process.env.CORS_CREDENTIALS === 'true',
   });
+
+  // Swagger configuration
+  const swaggerEnabled = process.env.SWAGGER_ENABLED !== 'false';
+  if (swaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('Technician Management System API')
+      .setDescription(
+        'API documentation for Technician Management System. This system manages work orders, technicians, clients, and provides secure authentication with JWT tokens.',
+      )
+      .setVersion('1.0.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'JWT-auth',
+      )
+      .addTag('auth', 'Authentication endpoints')
+      .addTag('users', 'User management endpoints')
+      .addTag('clients', 'Client management endpoints')
+      .addTag('work-orders', 'Work order management endpoints')
+      .addServer(`http://localhost:${process.env.PORT || 3000}`, 'Local development')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    const swaggerPath = process.env.SWAGGER_PATH || 'api/docs';
+    SwaggerModule.setup(swaggerPath, app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+    });
+
+    console.log(`Swagger documentation available at: http://localhost:${process.env.PORT || 3000}/${swaggerPath}`);
+  }
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
