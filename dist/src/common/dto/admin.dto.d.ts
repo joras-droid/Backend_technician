@@ -7,6 +7,7 @@ export declare class CreateEmployeeDto {
     phone?: string;
     address?: string;
     role?: UserRole;
+    defaultPayRate?: number;
 }
 export declare class WhitelistEmailDto {
     email: string;

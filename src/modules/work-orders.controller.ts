@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -29,6 +30,9 @@ import {
   RequestAttachmentPresignedUrlDto,
   CreateAttachmentDto,
   ListWorkOrdersQueryDto,
+  CreateWorkOrderDto,
+  UpdateWorkOrderDto,
+  DuplicateWorkOrderDto,
 } from '../common/dto/work-order.dto';
 import { PresignedUrlResponseDto } from '../common/dto/auth.dto';
 import { AuthenticatedRequest } from '../common/interfaces/request.interface';
@@ -100,9 +104,11 @@ export class WorkOrdersController {
   }
 
   @Get('technician')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.TECHNICIAN)
   @ApiOperation({
-    summary: 'Get my work orders',
-    description: 'Retrieve all work orders assigned to the authenticated technician. Active work orders are prioritized.',
+    summary: 'Get my work orders (Technician only)',
+    description: 'Retrieve all work orders assigned to the authenticated technician. Active work orders are prioritized. This endpoint is only available to TECHNICIAN role.',
   })
   @ApiResponse({
     status: 200,
@@ -121,11 +127,14 @@ export class WorkOrdersController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Technician role required' })
   getMyWorkOrders(@Request() req: AuthenticatedRequest) {
     return this.workOrdersService.findAllForTechnician(req.user.id);
   }
 
   @Get('technician/:technicianId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({
     summary: 'Get work orders for a technician (Admin/Manager)',
     description: 'Retrieve all work orders assigned to a specific technician. Requires admin or manager role.',
@@ -152,8 +161,91 @@ export class WorkOrdersController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
   getForTechnician(@Param('technicianId') technicianId: string) {
     return this.workOrdersService.findAllForTechnician(technicianId);
+  }
+
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create work order (Admin/Manager)',
+    description: 'Create a new work order and assign it to a technician',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Work order created successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
+  @ApiResponse({ status: 404, description: 'Client or technician not found' })
+  @ApiResponse({ status: 409, description: 'Work order number already exists' })
+  async create(
+    @Body() dto: CreateWorkOrderDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.workOrdersService.create(dto, req.user.id);
+  }
+
+  @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.TECHNICIAN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update work order',
+    description: 'Update an existing work order. Technicians can update photos, notes, tasks, and status. Admin/Manager can update all fields.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Work order ID',
+    example: 'clx1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Work order updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
+  @ApiResponse({ status: 404, description: 'Work order not found' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateWorkOrderDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.workOrdersService.update(id, dto, req.user.id, req.user.role);
+  }
+
+  @Post(':id/duplicate')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Duplicate work order (Admin/Manager)',
+    description: 'Create a duplicate of an existing work order with optional modifications',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Work order ID to duplicate',
+    example: 'clx1234567890',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Work order duplicated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
+  @ApiResponse({ status: 404, description: 'Work order not found' })
+  async duplicate(
+    @Param('id') id: string,
+    @Body() dto: DuplicateWorkOrderDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.workOrdersService.duplicate(id, dto, req.user.id);
   }
 
   @Get(':id')
@@ -174,6 +266,33 @@ export class WorkOrdersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getOne(@Param('id') id: string) {
     return this.workOrdersService.findOne(id);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete work order (Admin only)',
+    description: 'Delete a work order. Only admins can delete work orders.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Work order ID',
+    example: 'clx1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Work order deleted successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  @ApiResponse({ status: 404, description: 'Work order not found' })
+  async delete(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.workOrdersService.delete(id, req.user.id);
   }
 
   @Post(':workOrderId/attachments/presigned-url')

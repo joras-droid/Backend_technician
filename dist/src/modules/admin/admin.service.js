@@ -186,6 +186,7 @@ let AdminService = class AdminService {
                     ...rest,
                     password: hashedPassword,
                     whitelisted: true,
+                    defaultPayRate: rest.defaultPayRate,
                 },
                 select: {
                     id: true,
@@ -198,6 +199,7 @@ let AdminService = class AdminService {
                     profileImageUrl: true,
                     role: true,
                     whitelisted: true,
+                    defaultPayRate: true,
                     createdAt: true,
                     updatedAt: true,
                 },
@@ -220,6 +222,7 @@ let AdminService = class AdminService {
                 password: hashedPassword,
                 role: rest.role || client_1.UserRole.TECHNICIAN,
                 whitelisted: true,
+                defaultPayRate: rest.defaultPayRate,
             },
             select: {
                 id: true,

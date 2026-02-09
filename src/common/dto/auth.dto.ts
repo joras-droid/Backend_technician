@@ -41,16 +41,20 @@ export class SignUpDto {
   email: string;
 
   @ApiProperty({
-    description: 'Username (alphanumeric and underscores only)',
+    description: 'Username (alphanumeric and underscores only, no spaces or special characters)',
     example: 'johndoe',
     minLength: 3,
     maxLength: 30,
   })
   @IsString()
-  @MinLength(3)
-  @MaxLength(30)
+  @MinLength(3, {
+    message: 'Username must be at least 3 characters long',
+  })
+  @MaxLength(30, {
+    message: 'Username must not exceed 30 characters',
+  })
   @Matches(/^[a-zA-Z0-9_]+$/, {
-    message: 'Username can only contain letters, numbers, and underscores',
+    message: 'Username can only contain letters (a-z, A-Z), numbers (0-9), and underscores (_). No spaces or special characters allowed.',
   })
   username: string;
 
@@ -102,6 +106,68 @@ export class SignUpDto {
   profileImageUrl?: string;
 }
 
+export class RefreshTokenDto {
+  @ApiProperty({
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'Refresh token',
+  })
+  @IsString()
+  refreshToken: string;
+}
+
+export class PasswordResetRequestDto {
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+  })
+  @IsEmail()
+  email: string;
+}
+
+export class PasswordResetConfirmDto {
+  @ApiProperty({
+    description: 'Password reset token from email',
+    example: 'reset-token-from-email',
+  })
+  @IsString()
+  token: string;
+
+  @ApiProperty({
+    description: 'New password',
+    example: 'NewSecurePass123',
+    minLength: 8,
+  })
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  })
+  newPassword: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({
+    description: 'Current password',
+    example: 'OldPassword123',
+  })
+  @IsString()
+  currentPassword: string;
+
+  @ApiProperty({
+    description: 'New password',
+    example: 'NewPassword123',
+    minLength: 8,
+  })
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  })
+  newPassword: string;
+}
+
 export class SignInDto {
   @ApiProperty({
     description: 'Username or email address',
@@ -116,15 +182,6 @@ export class SignInDto {
   })
   @IsString()
   password: string;
-}
-
-export class RefreshTokenDto {
-  @ApiProperty({
-    description: 'Refresh token',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-  })
-  @IsString()
-  refreshToken: string;
 }
 
 export class RequestPresignedUrlDto {

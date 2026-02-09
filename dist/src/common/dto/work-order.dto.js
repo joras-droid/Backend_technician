@@ -19,6 +19,7 @@ class CreateWorkOrderEquipmentDto {
     quantity;
     cost;
     vendor;
+    equipmentId;
 }
 exports.CreateWorkOrderEquipmentDto = CreateWorkOrderEquipmentDto;
 __decorate([
@@ -33,8 +34,7 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateWorkOrderEquipmentDto.prototype, "quantity", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 45.99, description: 'Cost per unit', minimum: 0 }),
-    (0, class_validator_1.IsOptional)(),
+    (0, swagger_1.ApiProperty)({ example: 45.99, description: 'Cost per unit (mandatory)', minimum: 0 }),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
@@ -45,6 +45,15 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateWorkOrderEquipmentDto.prototype, "vendor", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 'clx1111111111',
+        description: 'Equipment catalog ID (if using catalog item)',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateWorkOrderEquipmentDto.prototype, "equipmentId", void 0);
 class CreateWorkOrderDto {
     workOrderNumber;
     scheduledAt;
@@ -191,6 +200,8 @@ class UpdateWorkOrderDto {
     clientId;
     technicianId;
     invoiceNumber;
+    beforeWorkPhotos;
+    afterWorkPhotos;
 }
 exports.UpdateWorkOrderDto = UpdateWorkOrderDto;
 __decorate([
@@ -255,6 +266,34 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateWorkOrderDto.prototype, "invoiceNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        type: [String],
+        example: [
+            'https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo1.jpg',
+            'https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo2.jpg',
+        ],
+        description: 'Array of S3 URLs for before-work photos',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsUrl)({}, { each: true }),
+    __metadata("design:type", Array)
+], UpdateWorkOrderDto.prototype, "beforeWorkPhotos", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        type: [String],
+        example: [
+            'https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo1.jpg',
+            'https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo2.jpg',
+        ],
+        description: 'Array of S3 URLs for after-work photos',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsUrl)({}, { each: true }),
+    __metadata("design:type", Array)
+], UpdateWorkOrderDto.prototype, "afterWorkPhotos", void 0);
 class CreateAttachmentDto {
     workOrderId;
     url;

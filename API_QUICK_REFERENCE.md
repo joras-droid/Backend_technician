@@ -19,22 +19,55 @@
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET | `/work-orders/technician` | ✅ | Get my work orders (uses authenticated user) |
-| GET | `/work-orders/technician/:technicianId` | ✅ | Get work orders for technician (Admin/Manager) |
 | GET | `/work-orders/:id` | ✅ | Get work order details |
 | POST | `/work-orders/:workOrderId/attachments/presigned-url` | ✅ | Get presigned URL for photo/receipt |
 | POST | `/work-orders/:workOrderId/attachments` | ✅ | Create attachment record |
+| POST | `/work-orders/:workOrderId/time-entries/check-in` | ✅ | Check in (with GPS) |
+| POST | `/work-orders/:workOrderId/time-entries/check-out` | ✅ | Check out (with GPS) |
+| GET | `/work-orders/:workOrderId/time-entries` | ✅ | Get time entries |
+| GET | `/notifications` | ✅ | Get notifications |
+| GET | `/notifications/unread-count` | ✅ | Get unread count |
+| PATCH | `/notifications/:id/read` | ✅ | Mark notification as read |
+| PATCH | `/auth/profile` | ✅ | Update profile |
+| POST | `/auth/change-password` | ✅ | Change password |
 
 ### Admin/Manager (Mobile & Web)
 | Method | Endpoint | Auth | Role | Description |
 |--------|----------|------|------|-------------|
 | GET | `/work-orders` | ✅ | ADMIN/MANAGER | List all work orders (with filters & pagination) |
+| POST | `/work-orders` | ✅ | ADMIN/MANAGER | Create work order |
+| PATCH | `/work-orders/:id` | ✅ | ADMIN/MANAGER | Update work order |
+| POST | `/work-orders/:id/duplicate` | ✅ | ADMIN/MANAGER | Duplicate work order |
+| GET | `/work-order-templates` | ✅ | ADMIN/MANAGER | List templates |
+| POST | `/work-order-templates` | ✅ | ADMIN/MANAGER | Create template |
+| PATCH | `/work-order-templates/:id` | ✅ | ADMIN/MANAGER | Update template |
+| DELETE | `/work-order-templates/:id` | ✅ | ADMIN/MANAGER | Delete template |
+| GET | `/clients` | ✅ | Any | Get all clients |
+| GET | `/clients/:id` | ✅ | Any | Get client details |
+| POST | `/clients` | ✅ | ADMIN/MANAGER | Create client |
+| PATCH | `/clients/:id` | ✅ | ADMIN/MANAGER | Update client |
+| GET | `/reports/work-orders` | ✅ | ADMIN/MANAGER | Work order reports |
+| GET | `/reports/time-summary` | ✅ | ADMIN/MANAGER | Time summary |
+| GET | `/reports/export` | ✅ | ADMIN/MANAGER | Export data (CSV) |
 | GET | `/admin/employees/whitelist` | ✅ | ADMIN | List whitelisted emails |
 | POST | `/admin/employees/whitelist` | ✅ | ADMIN | Whitelist single email |
 | POST | `/admin/employees/whitelist/bulk` | ✅ | ADMIN | Whitelist multiple emails |
 | POST | `/admin/employees` | ✅ | ADMIN | Create employee account |
 | DELETE | `/admin/employees/whitelist/:email` | ✅ | ADMIN | Remove from whitelist |
 | GET | `/users/technicians` | ✅ | Any | Get all technicians |
-| GET | `/clients` | ✅ | Any | Get all clients |
+
+### Admin Only
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| DELETE | `/work-orders/:id` | ✅ | ADMIN | Delete work order |
+| DELETE | `/clients/:id` | ✅ | ADMIN | Delete client |
+| GET | `/users` | ✅ | ADMIN | List all users |
+| GET | `/users/managers-and-technicians` | ✅ | ADMIN | Get all managers and technicians with details |
+| GET | `/users/:id` | ✅ | ADMIN | Get user details |
+| PATCH | `/users/:id` | ✅ | ADMIN | Update user |
+| POST | `/users/:id/reset-password` | ✅ | ADMIN | Reset user password (technicians/managers only) |
+| DELETE | `/users/:id` | ✅ | ADMIN | Delete user |
+| PATCH | `/time-entries/:id` | ✅ | ADMIN | Edit time entry (with audit) |
 
 ---
 

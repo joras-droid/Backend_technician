@@ -100,7 +100,8 @@ export class AdminService {
       });
     }
 
-    // Generate unique username from email
+    // Generate temporary unique username from email (placeholder - user will choose their own during signup)
+    // This username will be replaced when the user completes signup with their chosen username
     const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
     let username = baseUsername + '_' + Date.now().toString().slice(-6);
     
@@ -113,7 +114,7 @@ export class AdminService {
 
     // Create whitelisted user record
     // Use a temporary password that will be replaced during signup
-    // We'll use a special marker to identify temp passwords
+    // The username above is also temporary - user will provide their own during signup
     const tempPassword = 'TEMP_PASSWORD_' + Date.now().toString();
     const saltRounds = parseInt(
       this.configService.get<string>('BCRYPT_ROUNDS', '10'),
@@ -196,6 +197,7 @@ export class AdminService {
           ...rest,
           password: hashedPassword,
           whitelisted: true,
+          defaultPayRate: rest.defaultPayRate,
         },
         select: {
           id: true,
@@ -208,6 +210,7 @@ export class AdminService {
           profileImageUrl: true,
           role: true,
           whitelisted: true,
+          defaultPayRate: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -241,6 +244,7 @@ export class AdminService {
         password: hashedPassword,
         role: rest.role || UserRole.TECHNICIAN,
         whitelisted: true,
+        defaultPayRate: rest.defaultPayRate,
       },
       select: {
         id: true,

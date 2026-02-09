@@ -22,6 +22,7 @@ const public_decorator_1 = require("./decorators/public.decorator");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const user_dto_1 = require("../../common/dto/user.dto");
 const profile_dto_1 = require("../../common/dto/profile.dto");
+const auth_dto_2 = require("../../common/dto/auth.dto");
 let AuthController = class AuthController {
     authService;
     s3Service;
@@ -75,6 +76,21 @@ let AuthController = class AuthController {
     }
     async updateProfileImage(req, dto) {
         return this.authService.updateProfileImage(req.user.id, dto.profileImageUrl);
+    }
+    async refreshToken(dto) {
+        return this.authService.refreshToken(dto.refreshToken);
+    }
+    async requestPasswordReset(dto) {
+        return this.authService.requestPasswordReset(dto.email);
+    }
+    async confirmPasswordReset(dto) {
+        return this.authService.confirmPasswordReset(dto.token, dto.newPassword);
+    }
+    async updateProfile(req, dto) {
+        return this.authService.updateProfile(req.user.id, dto);
+    }
+    async changePassword(req, dto) {
+        return this.authService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
     }
 };
 exports.AuthController = AuthController;
@@ -200,6 +216,113 @@ __decorate([
     __metadata("design:paramtypes", [Object, profile_dto_1.ProfileImageUrlDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "updateProfileImage", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('refresh'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Refresh access token',
+        description: 'Get new access and refresh tokens using refresh token',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Tokens refreshed successfully',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 200 },
+                data: {
+                    type: 'object',
+                    properties: {
+                        accessToken: { type: 'string' },
+                        refreshToken: { type: 'string' },
+                    },
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Invalid refresh token' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_2.RefreshTokenDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "refreshToken", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('password-reset/request'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Request password reset',
+        description: 'Request password reset email',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Password reset email sent (if email exists)',
+    }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_2.PasswordResetRequestDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "requestPasswordReset", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('password-reset/confirm'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Confirm password reset',
+        description: 'Confirm password reset with token',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Password reset successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid or expired token' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_2.PasswordResetConfirmDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "confirmPasswordReset", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('profile'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Update profile',
+        description: 'Update authenticated user profile',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Profile updated successfully',
+        type: user_dto_1.UserResponseDto,
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, profile_dto_1.UpdateProfileDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('change-password'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Change password',
+        description: 'Change user password',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Password changed successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized or incorrect current password' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, auth_dto_2.ChangePasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "changePassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('auth'),
     (0, common_1.Controller)('auth'),

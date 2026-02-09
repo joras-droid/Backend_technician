@@ -19,6 +19,13 @@
 
 **📱 Flutter Integration:** See [FLUTTER_API_MAPPING.md](./FLUTTER_API_MAPPING.md) for complete Flutter AppConstants mapping.
 
+**🆕 New Features:** See [NEW_FEATURES_DOCUMENTATION.md](./NEW_FEATURES_DOCUMENTATION.md) for recently implemented features including:
+- Equipment Management (Admin)
+- Equipment Search (Technician)
+- Custom Equipment & Approval Workflow
+- User Management Enhancements
+- Default Pay Rate for Technicians
+
 ---
 
 ## Authentication
@@ -36,7 +43,7 @@ Tokens expire after 7 days (configurable). Refresh tokens expire after 30 days.
 
 **Endpoint:** `POST /auth/signup`  
 **Authentication:** Not required (Public)  
-**Description:** Register a new user account. Email must be whitelisted by admin.
+**Description:** Register a new user account. Email must be whitelisted by admin. **Username must be provided by the user** - it cannot contain spaces or special characters (only letters, numbers, and underscores allowed, similar to X/Twitter or Instagram usernames).
 
 **Request:**
 ```json
@@ -57,7 +64,7 @@ Tokens expire after 7 days (configurable). Refresh tokens expire after 30 days.
 - `firstName` (string, required): 2-50 characters
 - `lastName` (string, required): 2-50 characters
 - `email` (string, required): Valid email, must be whitelisted
-- `username` (string, required): 3-30 characters, alphanumeric and underscores only
+- `username` (string, **required**): 3-30 characters. **Must be provided by user.** Only letters (a-z, A-Z), numbers (0-9), and underscores (_) allowed. No spaces or special characters.
 - `password` (string, required): Min 8 characters, must contain uppercase, lowercase, and number
 - `phone` (string, optional): Phone number
 - `address` (string, optional): Address
@@ -107,11 +114,18 @@ Tokens expire after 7 days (configurable). Refresh tokens expire after 30 days.
     "message": "Email is not whitelisted. Please contact administrator."
   }
   ```
-- `409 Conflict`: User already exists
+- `409 Conflict`: Username already taken or user already exists
   ```json
   {
     "statusCode": 409,
-    "message": "User with this email or username already exists"
+    "message": "Username is already taken. Please choose a different username."
+  }
+  ```
+  OR
+  ```json
+  {
+    "statusCode": 409,
+    "message": "User account already exists. Please sign in instead."
   }
   ```
 
@@ -485,6 +499,129 @@ GET /api/v1/work-orders?status=ACTIVE&technicianId=clx1234567890&page=1&limit=20
 
 ---
 
+### Update Work Order
+
+**Endpoint:** `PATCH /work-orders/:id`  
+**Authentication:** Required (JWT - ADMIN, MANAGER, or TECHNICIAN role)  
+**Description:** Update an existing work order. Technicians can only update photos, notes, tasks, and status. Admin/Manager can update all fields.
+
+**Path Parameters:**
+- `id` (string, required): Work order ID
+
+**Request Body:** (All fields optional - only include fields to update)
+
+**For Admin/Manager (all fields):**
+```json
+{
+  "scheduledAt": "2026-02-11T09:00:00.000Z",
+  "estimatedHours": 5.0,
+  "payRate": 26.0,
+  "facilityName": "Updated Facility Name",
+  "facilityAddress": "Updated Address",
+  "pointOfContact": "Updated Contact",
+  "tasks": "Updated tasks",
+  "notes": "Updated notes",
+  "clientId": "clx9876543210",
+  "technicianId": "clx1234567890",
+  "status": "COMPLETED",
+  "invoiceNumber": "INV-2026-001",
+  "beforeWorkPhotos": [
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo1.jpg",
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo2.jpg"
+  ],
+  "afterWorkPhotos": [
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo1.jpg"
+  ]
+}
+```
+
+**For Technician (limited fields - photos, notes, tasks, status only):**
+```json
+{
+  "tasks": "Completed installation and testing",
+  "notes": "Customer satisfied with work",
+  "status": "COMPLETED",
+  "beforeWorkPhotos": [
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo1.jpg",
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo2.jpg"
+  ],
+  "afterWorkPhotos": [
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo1.jpg",
+    "https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo2.jpg"
+  ]
+}
+```
+
+**Request Fields:**
+
+**Admin/Manager can update:**
+- `scheduledAt` (string, optional): New scheduled date/time
+- `estimatedHours` (number, optional): Estimated hours
+- `payRate` (number, optional): Pay rate
+- `facilityName` (string, optional): Facility name
+- `facilityAddress` (string, optional): Facility address
+- `pointOfContact` (string, optional): Point of contact
+- `tasks` (string, optional): Task description
+- `notes` (string, optional): Notes
+- `status` (enum, optional): Work order status - ACTIVE, COMPLETED, PAID
+- `clientId` (string, optional): Client ID
+- `technicianId` (string, optional): Technician ID
+- `invoiceNumber` (string, optional): Invoice number
+- `beforeWorkPhotos` (array of strings, optional): Array of S3 URLs for before-work photos
+- `afterWorkPhotos` (array of strings, optional): Array of S3 URLs for after-work photos
+
+**Technician can only update:**
+- `tasks` (string, optional): Task description
+- `notes` (string, optional): Notes
+- `status` (enum, optional): Work order status - ACTIVE, COMPLETED, PAID
+- `beforeWorkPhotos` (array of strings, optional): Array of S3 URLs for before-work photos
+- `afterWorkPhotos` (array of strings, optional): Array of S3 URLs for after-work photos
+
+**Important Notes:**
+- Technicians can only update work orders assigned to them
+- Technicians cannot update: scheduledAt, estimatedHours, payRate, facilityName, facilityAddress, pointOfContact, clientId, technicianId, invoiceNumber
+- Photo URLs should be uploaded via presigned URL first (use `/work-orders/:workOrderId/attachments/presigned-url` with `attachmentType: "photo"`)
+- Arrays can be appended to (add new photos) or replaced entirely
+- Each URL in the array must be a valid S3 URL
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx1234567890",
+    "workOrderNumber": "WO-2026-001",
+    "scheduledAt": "2026-02-11T09:00:00.000Z",
+    "estimatedHours": 5.0,
+    "payRate": 26.0,
+    "facilityName": "Updated Facility Name",
+    "facilityAddress": "Updated Address",
+    "pointOfContact": "Updated Contact",
+    "tasks": "Completed installation and testing",
+    "notes": "Customer satisfied with work",
+    "status": "COMPLETED",
+    "invoiceNumber": "INV-2026-001",
+    "beforeWorkPhotos": [
+      "https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo1.jpg",
+      "https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo2.jpg"
+    ],
+    "afterWorkPhotos": [
+      "https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo1.jpg"
+    ],
+    "updatedAt": "2026-02-09T05:30:00.000Z",
+    ...
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Validation error, work order not assigned to you (technician), or technician trying to update restricted fields
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: User does not have required role
+- `404 Not Found`: Work order not found
+
+---
+
 ### Get Work Order Details
 
 **Endpoint:** `GET /work-orders/:id`  
@@ -511,6 +648,8 @@ GET /api/v1/work-orders?status=ACTIVE&technicianId=clx1234567890&page=1&limit=20
     "notes": "Customer requested early morning start",
     "status": "ACTIVE",
     "invoiceNumber": null,
+    "beforeWorkPhotos": [],
+    "afterWorkPhotos": [],
     "client": {
       "id": "clx9876543210",
       "name": "ABC Manufacturing",
@@ -828,6 +967,7 @@ GET /api/v1/work-orders?status=ACTIVE&technicianId=clx1234567890&page=1&limit=20
 - `phone` (string, optional): Phone number
 - `address` (string, optional): Address
 - `role` (enum, optional): `ADMIN`, `MANAGER`, or `TECHNICIAN` (default: `TECHNICIAN`)
+- `defaultPayRate` (number, optional): Default hourly pay rate for technician
 
 **Response (201 Created):**
 ```json
@@ -843,6 +983,7 @@ GET /api/v1/work-orders?status=ACTIVE&technicianId=clx1234567890&page=1&limit=20
     "address": "123 Main St",
     "role": "TECHNICIAN",
     "whitelisted": true,
+    "defaultPayRate": 25.0,
     "createdAt": "2026-02-06T16:00:00.000Z",
     "updatedAt": "2026-02-06T16:00:00.000Z"
   }
@@ -945,6 +1086,1364 @@ OR (if account was activated):
       "updatedAt": "2026-02-06T12:00:00.000Z"
     }
   ]
+}
+```
+
+---
+
+## Work Order Templates
+
+### List Work Order Templates
+
+**Endpoint:** `GET /work-order-templates`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Get list of all work order templates.
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "clx1111111111",
+      "name": "Standard Installation",
+      "tasks": "Install equipment\nTest functionality\nDocument results",
+      "notes": "Standard installation template",
+      "createdAt": "2026-02-01T10:00:00.000Z",
+      "updatedAt": "2026-02-01T10:00:00.000Z",
+      "_count": {
+        "workOrders": 5
+      }
+    }
+  ]
+}
+```
+
+---
+
+### Create Work Order Template
+
+**Endpoint:** `POST /work-order-templates`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Create a new reusable work order template.
+
+**Request:**
+```json
+{
+  "name": "Standard Installation",
+  "tasks": "Install equipment\nTest functionality\nDocument results",
+  "notes": "Standard installation template"
+}
+```
+
+**Response (201 Created):** Same format as list
+
+---
+
+### Update Work Order Template
+
+**Endpoint:** `PATCH /work-order-templates/:id`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Update an existing work order template.
+
+**Path Parameters:**
+- `id` (string, required): Template ID
+
+**Request Body:** (All fields optional)
+
+**Response (200 OK):** Same format as create
+
+---
+
+### Delete Work Order Template
+
+**Endpoint:** `DELETE /work-order-templates/:id`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Delete a work order template.
+
+**Path Parameters:**
+- `id` (string, required): Template ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "Template deleted successfully",
+    "id": "clx1111111111"
+  }
+}
+```
+
+---
+
+## Time Tracking
+
+### Check In
+
+**Endpoint:** `POST /work-orders/:workOrderId/time-entries/check-in`  
+**Authentication:** Required (JWT - TECHNICIAN role)  
+**Description:** Record check-in time and location for a work order.
+
+**Path Parameters:**
+- `workOrderId` (string, required): Work order ID
+
+**Request:**
+```json
+{
+  "checkInLat": 40.7128,
+  "checkInLng": -74.0060
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "id": "clx3333333333",
+    "workOrderId": "clx1234567890",
+    "technicianId": "clx1234567890",
+    "checkInAt": "2026-02-10T09:05:00.000Z",
+    "checkInLat": 40.7128,
+    "checkInLng": -74.0060,
+    "checkOutAt": null,
+    "checkOutLat": null,
+    "checkOutLng": null,
+    "createdAt": "2026-02-10T09:05:00.000Z",
+    "updatedAt": "2026-02-10T09:05:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Already checked in
+- `403 Forbidden`: Work order not assigned to you
+
+---
+
+### Check Out
+
+**Endpoint:** `POST /work-orders/:workOrderId/time-entries/check-out`  
+**Authentication:** Required (JWT - TECHNICIAN role)  
+**Description:** Record check-out time and location for a work order.
+
+**Path Parameters:**
+- `workOrderId` (string, required): Work order ID
+
+**Request:**
+```json
+{
+  "checkOutLat": 40.7128,
+  "checkOutLng": -74.0060
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx3333333333",
+    "workOrderId": "clx1234567890",
+    "technicianId": "clx1234567890",
+    "checkInAt": "2026-02-10T09:05:00.000Z",
+    "checkInLat": 40.7128,
+    "checkInLng": -74.0060,
+    "checkOutAt": "2026-02-10T13:30:00.000Z",
+    "checkOutLat": 40.7128,
+    "checkOutLng": -74.0060,
+    "totalHours": 4.42,
+    "updatedAt": "2026-02-10T13:30:00.000Z"
+  }
+}
+```
+
+---
+
+### Get Time Entries
+
+**Endpoint:** `GET /work-orders/:workOrderId/time-entries`  
+**Authentication:** Required (JWT)  
+**Description:** Get all time entries for a work order.
+
+**Path Parameters:**
+- `workOrderId` (string, required): Work order ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "clx3333333333",
+      "workOrderId": "clx1234567890",
+      "technicianId": "clx1234567890",
+      "checkInAt": "2026-02-10T09:05:00.000Z",
+      "checkInLat": 40.7128,
+      "checkInLng": -74.0060,
+      "checkOutAt": "2026-02-10T13:30:00.000Z",
+      "checkOutLat": 40.7128,
+      "checkOutLng": -74.0060,
+      "totalHours": 4.42,
+      "technician": {
+        "id": "clx1234567890",
+        "firstName": "John",
+        "lastName": "Doe"
+      },
+      "edits": []
+    }
+  ]
+}
+```
+
+---
+
+### Edit Time Entry (Admin Only)
+
+**Endpoint:** `PATCH /time-entries/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Edit a time entry with audit trail. Technician will be notified.
+
+**Path Parameters:**
+- `id` (string, required): Time entry ID
+
+**Request:**
+```json
+{
+  "checkInAt": "2026-02-10T09:00:00.000Z",
+  "checkOutAt": "2026-02-10T13:00:00.000Z",
+  "reason": "Corrected time due to system error"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx3333333333",
+    "workOrderId": "clx1234567890",
+    "technicianId": "clx1234567890",
+    "checkInAt": "2026-02-10T09:00:00.000Z",
+    "checkOutAt": "2026-02-10T13:00:00.000Z",
+    "totalHours": 4.0,
+    "editReason": "Corrected time due to system error",
+    "edits": [
+      {
+        "id": "clx4444444444",
+        "field": "checkInAt",
+        "originalValue": "2026-02-10T09:05:00.000Z",
+        "updatedValue": "2026-02-10T09:00:00.000Z",
+        "editedBy": {
+          "id": "clx9999999999",
+          "firstName": "Admin",
+          "lastName": "User"
+        },
+        "createdAt": "2026-02-10T14:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Client Management
+
+### Create Client
+
+**Endpoint:** `POST /clients`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Create a new client.
+
+**Request:**
+```json
+{
+  "name": "ABC Manufacturing",
+  "email": "contact@abcmanufacturing.com",
+  "phone": "+1234567890",
+  "address": "123 Industrial Blvd, City, State 12345",
+  "notes": "Preferred contact: Jane Smith"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "id": "clx9876543210",
+    "name": "ABC Manufacturing",
+    "email": "contact@abcmanufacturing.com",
+    "phone": "+1234567890",
+    "address": "123 Industrial Blvd, City, State 12345",
+    "notes": "Preferred contact: Jane Smith",
+    "createdAt": "2026-02-01T10:00:00.000Z",
+    "updatedAt": "2026-02-01T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+### Update Client
+
+**Endpoint:** `PATCH /clients/:id`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Update an existing client.
+
+**Path Parameters:**
+- `id` (string, required): Client ID
+
+**Request Body:** (All fields optional)
+
+**Response (200 OK):** Same format as create
+
+---
+
+### Delete Client
+
+**Endpoint:** `DELETE /clients/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Delete a client. Cannot delete if client has associated work orders.
+
+**Path Parameters:**
+- `id` (string, required): Client ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "Client deleted successfully",
+    "id": "clx9876543210"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Client has associated work orders
+
+---
+
+### Get Client Details
+
+**Endpoint:** `GET /clients/:id`  
+**Authentication:** Required (JWT)  
+**Description:** Get detailed information about a specific client.
+
+**Path Parameters:**
+- `id` (string, required): Client ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx9876543210",
+    "name": "ABC Manufacturing",
+    "email": "contact@abcmanufacturing.com",
+    "phone": "+1234567890",
+    "address": "123 Industrial Blvd, City, State 12345",
+    "notes": "Preferred contact: Jane Smith",
+    "workOrdersCount": 5,
+    "createdAt": "2026-02-01T10:00:00.000Z",
+    "updatedAt": "2026-02-06T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+## User Management
+
+### List All Users
+
+**Endpoint:** `GET /users`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Get list of all users with optional filters and pagination.
+
+**Query Parameters:**
+- `role` (enum, optional): Filter by role (`ADMIN`, `MANAGER`, `TECHNICIAN`)
+- `page` (number, optional): Page number (default: 1)
+- `limit` (number, optional): Items per page (default: 20, max: 100)
+- `search` (string, optional): Search by name, email, or username
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "data": [
+      {
+        "id": "clx1234567890",
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john.doe@example.com",
+        "username": "johndoe",
+        "phone": "+1234567890",
+        "address": "123 Main St",
+        "profileImageUrl": "https://...",
+        "role": "TECHNICIAN",
+        "whitelisted": true,
+        "createdAt": "2026-02-06T12:00:00.000Z",
+        "updatedAt": "2026-02-06T12:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 50,
+      "totalPages": 3
+    }
+  }
+}
+```
+
+---
+
+### Get All Managers and Technicians
+
+**Endpoint:** `GET /users/managers-and-technicians`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Get detailed information about all managers and technicians including work orders and time entries counts. Returns data grouped by role with summary statistics.
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "managers": [
+      {
+        "id": "clx1111111111",
+        "firstName": "Jane",
+        "lastName": "Manager",
+        "email": "jane.manager@example.com",
+        "username": "janemanager",
+        "phone": "+1234567890",
+        "address": "123 Manager St",
+        "profileImageUrl": "https://...",
+        "role": "MANAGER",
+        "whitelisted": true,
+        "workOrdersCount": 25,
+        "timeEntriesCount": 0,
+        "createdAt": "2026-02-01T10:00:00.000Z",
+        "updatedAt": "2026-02-06T12:00:00.000Z"
+      }
+    ],
+    "technicians": [
+      {
+        "id": "clx1234567890",
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john.doe@example.com",
+        "username": "johndoe",
+        "phone": "+1234567890",
+        "address": "123 Main St",
+        "profileImageUrl": "https://...",
+        "role": "TECHNICIAN",
+        "whitelisted": true,
+        "workOrdersCount": 15,
+        "timeEntriesCount": 30,
+        "createdAt": "2026-02-06T12:00:00.000Z",
+        "updatedAt": "2026-02-06T12:00:00.000Z"
+      }
+    ],
+    "summary": {
+      "totalManagers": 2,
+      "totalTechnicians": 10,
+      "total": 12
+    }
+  }
+}
+```
+
+**Response Fields:**
+- `managers` (array): List of all managers with detailed information
+- `technicians` (array): List of all technicians with detailed information
+- `summary` (object): Summary statistics
+  - `totalManagers` (number): Total number of managers
+  - `totalTechnicians` (number): Total number of technicians
+  - `total` (number): Total number of managers and technicians
+
+**Error Responses:**
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: User does not have ADMIN role
+
+---
+
+### Get User Details
+
+**Endpoint:** `GET /users/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Get detailed information about a specific user.
+
+**Path Parameters:**
+- `id` (string, required): User ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx1234567890",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "username": "johndoe",
+    "phone": "+1234567890",
+    "address": "123 Main St",
+    "profileImageUrl": "https://...",
+    "role": "TECHNICIAN",
+    "whitelisted": true,
+    "workOrdersCount": 15,
+    "createdAt": "2026-02-06T12:00:00.000Z",
+    "updatedAt": "2026-02-06T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+### Update User
+
+**Endpoint:** `PATCH /users/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Update user information.
+
+**Path Parameters:**
+- `id` (string, required): User ID
+
+**Request Body:** (All fields optional)
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "username": "johndoe",
+  "phone": "+1234567890",
+  "address": "123 Main St",
+  "role": "MANAGER"
+}
+```
+
+**Request Fields:**
+- `firstName` (string, optional): First name
+- `lastName` (string, optional): Last name
+- `email` (string, optional): Email address (must be unique)
+- `username` (string, optional): Username (3-30 characters, alphanumeric and underscores only, must be unique)
+- `phone` (string, optional): Phone number
+- `address` (string, optional): Address
+- `role` (enum, optional): User role
+
+**Error Responses:**
+- `400 Bad Request`: Validation error (e.g., invalid username format)
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: User does not have ADMIN role
+- `404 Not Found`: User not found
+- `409 Conflict`: Email or username already exists
+
+**Response (200 OK):** Same format as get user details
+
+---
+
+### Reset User Password
+
+**Endpoint:** `POST /users/:id/reset-password`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Reset password for a technician or manager. Cannot reset admin passwords.
+
+**Path Parameters:**
+- `id` (string, required): User ID
+
+**Request:**
+```json
+{
+  "newPassword": "NewSecurePass123"
+}
+```
+
+**Request Fields:**
+- `newPassword` (string, required): New password (min 8 characters, must contain uppercase, lowercase, and number)
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "Password reset successfully",
+    "id": "clx1234567890"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Cannot reset password for admin users
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: User does not have ADMIN role
+- `404 Not Found`: User not found
+
+---
+
+### Delete User
+
+**Endpoint:** `DELETE /users/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Delete a user. Cannot delete if user has assigned work orders.
+
+**Path Parameters:**
+- `id` (string, required): User ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "User deleted successfully",
+    "id": "clx1234567890"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: User has assigned work orders
+
+---
+
+## Equipment Management
+
+### Add Catalog Equipment to Work Order (Technician Only)
+
+**Endpoint:** `POST /work-orders/:workOrderId/equipment`  
+**Authentication:** Required (JWT - TECHNICIAN role only)  
+**Description:** Add equipment from the catalog to a work order. Catalog equipment is pre-approved and cost is immediately included in totals.
+
+**Path Parameters:**
+- `workOrderId` (string, required): Work order ID (provided in URL path, **do not include in request body**)
+
+**Request:**
+```json
+{
+  "equipmentId": "clx1111111111",
+  "quantity": 2
+}
+```
+
+**Request Fields:**
+- `equipmentId` (string, **required**): Equipment ID from catalog (obtained via search or list endpoints)
+- `quantity` (number, **required**): Quantity (minimum: 1)
+
+**Important:** 
+- **Do NOT include `cost` in the request body** - the cost is automatically taken from the catalog equipment's price
+- **Do NOT include `workOrderId` in the request body** - it's provided in the URL path
+- Only `equipmentId` and `quantity` are required
+
+**Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "id": "clx3333333333",
+    "workOrderId": "clx1234567890",
+    "equipmentId": "clx1111111111",
+    "name": "Wrench Set",
+    "quantity": 2,
+    "cost": 45.99,
+    "vendor": "Home Depot",
+    "isCustom": false,
+    "approvalStatus": "APPROVED",
+    "equipment": {
+      "id": "clx1111111111",
+      "name": "Wrench Set",
+      "price": 45.99
+    },
+    "createdAt": "2026-02-09T10:00:00.000Z",
+    "updatedAt": "2026-02-09T10:00:00.000Z"
+  }
+}
+```
+
+**Important Notes:**
+- Equipment must exist in catalog and be active
+- Equipment is automatically approved (no approval workflow needed)
+- Cost is immediately included in work order totals
+- Work order must be assigned to the technician
+
+**Error Responses:**
+- `400 Bad Request`: Work order not assigned to you, equipment not active, or validation error
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: User does not have TECHNICIAN role
+- `404 Not Found`: Work order or equipment not found
+
+---
+
+### Create Equipment (Admin Only)
+
+**Endpoint:** `POST /equipment`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Add new equipment to the catalog with mandatory price and optional price range.
+
+**Request:**
+```json
+{
+  "name": "Wrench Set",
+  "description": "Professional grade wrench set",
+  "price": 45.99,
+  "minRange": 40.0,
+  "maxRange": 50.0,
+  "vendor": "Home Depot"
+}
+```
+
+**Request Fields:**
+- `name` (string, required): Equipment name (must be unique)
+- `description` (string, optional): Equipment description
+- `price` (number, required): Price (mandatory)
+- `minRange` (number, optional): Minimum price range
+- `maxRange` (number, optional): Maximum price range
+- `vendor` (string, optional): Vendor name
+
+**Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "id": "clx1111111111",
+    "name": "Wrench Set",
+    "description": "Professional grade wrench set",
+    "price": 45.99,
+    "minRange": 40.0,
+    "maxRange": 50.0,
+    "vendor": "Home Depot",
+    "isActive": true,
+    "createdAt": "2026-02-09T10:00:00.000Z",
+    "updatedAt": "2026-02-09T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+### List All Equipment
+
+**Endpoint:** `GET /equipment`  
+**Authentication:** Required (JWT - ADMIN, MANAGER, or TECHNICIAN role)  
+**Description:** Get list of all active equipment in the catalog. Available to Admin, Manager, and Technician.
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "clx1111111111",
+      "name": "Wrench Set",
+      "description": "Professional grade wrench set",
+      "price": 45.99,
+      "minRange": 40.0,
+      "maxRange": 50.0,
+      "vendor": "Home Depot",
+      "isActive": true,
+      "createdAt": "2026-02-09T10:00:00.000Z",
+      "updatedAt": "2026-02-09T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### Search Equipment (Technician Only)
+
+**Endpoint:** `GET /equipment/search`  
+**Authentication:** Required (JWT - TECHNICIAN role only)  
+**Description:** Search equipment using fuzzy logic. Searches by name, description, and vendor.
+
+**Query Parameters:**
+- `search` (string, required): Search term
+- `limit` (number, optional): Maximum results (default: 20, max: 100)
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "clx1111111111",
+      "name": "Wrench Set",
+      "description": "Professional grade wrench set",
+      "price": 45.99,
+      "minRange": 40.0,
+      "maxRange": 50.0,
+      "vendor": "Home Depot",
+      "isActive": true
+    }
+  ]
+}
+```
+
+---
+
+### Update Equipment (Admin Only)
+
+**Endpoint:** `PATCH /equipment/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Update equipment information.
+
+**Path Parameters:**
+- `id` (string, required): Equipment ID
+
+**Request Body:** (All fields optional)
+
+**Response (200 OK):** Same format as create
+
+---
+
+### Delete Equipment (Admin Only)
+
+**Endpoint:** `DELETE /equipment/:id`  
+**Authentication:** Required (JWT - ADMIN role only)  
+**Description:** Delete equipment from catalog.
+
+**Path Parameters:**
+- `id` (string, required): Equipment ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "Equipment deleted successfully",
+    "id": "clx1111111111"
+  }
+}
+```
+
+---
+
+### Add Custom Equipment (Technician Only)
+
+**Endpoint:** `POST /work-orders/:workOrderId/equipment/custom`  
+**Authentication:** Required (JWT - TECHNICIAN role only)  
+**Description:** Add custom equipment to a work order. Requires approval from admin/manager. Creates notifications for all admins and managers.
+
+**Path Parameters:**
+- `workOrderId` (string, required): Work order ID (provided in URL path, **do not include in request body**)
+
+**Request:**
+```json
+{
+  "name": "Custom Tool XYZ",
+  "quantity": 2,
+  "cost": 75.50,
+  "vendor": "Local Hardware Store",
+  "receiptUrl": "https://bucket.s3.region.amazonaws.com/receipts/receipt123.jpg"
+}
+```
+
+**Important:** The `workOrderId` is provided in the URL path (`/work-orders/:workOrderId/equipment/custom`). **Do NOT include `workOrderId` in the request body** - it will cause a validation error.
+
+**Request Fields:**
+- `name` (string, required): Equipment name
+- `quantity` (number, required): Quantity (min: 1)
+- `cost` (number, required): Cost per unit (mandatory)
+- `vendor` (string, optional): Vendor name
+- `receiptUrl` (string, optional): Receipt URL (upload via presigned URL first)
+
+**Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "id": "clx2222222222",
+    "workOrderId": "clx1234567890",
+    "name": "Custom Tool XYZ",
+    "quantity": 2,
+    "cost": 75.50,
+    "vendor": "Local Hardware Store",
+    "receiptUrl": "https://bucket.s3.region.amazonaws.com/receipts/receipt123.jpg",
+    "isCustom": true,
+    "approvalStatus": "PENDING",
+    "addedByTechnician": {
+      "id": "clx1234567890",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "createdAt": "2026-02-09T10:00:00.000Z",
+    "updatedAt": "2026-02-09T10:00:00.000Z"
+  }
+}
+```
+
+**Note:** This creates notifications for all admins and managers to approve/reject the equipment.
+
+---
+
+### Get Pending Equipment Approvals (Admin/Manager)
+
+**Endpoint:** `GET /equipment/pending-approvals`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Get all custom equipment waiting for approval.
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "clx2222222222",
+      "workOrderId": "clx1234567890",
+      "name": "Custom Tool XYZ",
+      "quantity": 2,
+      "cost": 75.50,
+      "vendor": "Local Hardware Store",
+      "receiptUrl": "https://...",
+      "isCustom": true,
+      "approvalStatus": "PENDING",
+      "addedByTechnician": {
+        "id": "clx1234567890",
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john.doe@example.com"
+      },
+      "workOrder": {
+        "id": "clx1234567890",
+        "workOrderNumber": "WO-2026-001",
+        "facilityName": "ABC Manufacturing"
+      },
+      "createdAt": "2026-02-09T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### Approve Custom Equipment (Admin/Manager)
+
+**Endpoint:** `POST /equipment/:id/approve`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Approve custom equipment. Approved equipment cost will be included in total cost calculations.
+
+**Path Parameters:**
+- `id` (string, required): Equipment ID
+
+**Request:**
+```json
+{
+  "note": "Approved for reimbursement"
+}
+```
+
+**Request Fields:**
+- `note` (string, optional): Approval note
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx2222222222",
+    "approvalStatus": "APPROVED",
+    "approvedAt": "2026-02-09T11:00:00.000Z",
+    "approvedBy": {
+      "id": "clx9999999999",
+      "firstName": "Admin",
+      "lastName": "User"
+    }
+  }
+}
+```
+
+**Note:** Technician will receive a notification that their equipment was approved.
+
+---
+
+### Reject Custom Equipment (Admin/Manager)
+
+**Endpoint:** `POST /equipment/:id/reject`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Reject custom equipment. Rejected equipment cost will NOT be included in total cost calculations.
+
+**Path Parameters:**
+- `id` (string, required): Equipment ID
+
+**Request:**
+```json
+{
+  "reason": "Receipt not provided"
+}
+```
+
+**Request Fields:**
+- `reason` (string, required): Reason for rejection
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx2222222222",
+    "approvalStatus": "REJECTED",
+    "rejectionReason": "Receipt not provided",
+    "approvedAt": "2026-02-09T11:00:00.000Z",
+    "approvedBy": {
+      "id": "clx9999999999",
+      "firstName": "Admin",
+      "lastName": "User"
+    }
+  }
+}
+```
+
+**Note:** Technician will receive a notification with the rejection reason.
+
+---
+
+## Notifications
+
+### Get User Notifications
+
+**Endpoint:** `GET /notifications`  
+**Authentication:** Required (JWT)  
+**Description:** Get notifications for the authenticated user.
+
+**Query Parameters:**
+- `page` (number, optional): Page number (default: 1)
+- `limit` (number, optional): Items per page (default: 20)
+- `unreadOnly` (boolean, optional): Filter unread notifications only (default: false)
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "data": [
+      {
+        "id": "clx7777777777",
+        "userId": "clx1234567890",
+        "type": "WORK_ORDER_ASSIGNED",
+        "channel": "PUSH",
+        "title": "New Work Order Assigned",
+        "message": "You have been assigned work order WO-2026-001",
+        "read": false,
+        "readAt": null,
+        "deliveredAt": null,
+        "createdAt": "2026-02-06T12:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 10,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+---
+
+### Mark Notification as Read
+
+**Endpoint:** `PATCH /notifications/:id/read`  
+**Authentication:** Required (JWT)  
+**Description:** Mark a notification as read.
+
+**Path Parameters:**
+- `id` (string, required): Notification ID
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx7777777777",
+    "read": true,
+    "readAt": "2026-02-06T13:00:00.000Z"
+  }
+}
+```
+
+---
+
+### Get Unread Count
+
+**Endpoint:** `GET /notifications/unread-count`  
+**Authentication:** Required (JWT)  
+**Description:** Get count of unread notifications.
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "unreadCount": 5
+  }
+}
+```
+
+---
+
+## Reporting
+
+### Work Order Reports
+
+**Endpoint:** `GET /reports/work-orders`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Generate work order reports with filters.
+
+**Query Parameters:**
+- `startDate` (ISO 8601, optional): Start date
+- `endDate` (ISO 8601, optional): End date
+- `status` (enum, optional): Filter by status (`ACTIVE`, `COMPLETED`, `PAID`)
+- `technicianId` (string, optional): Filter by technician
+- `clientId` (string, optional): Filter by client
+- `groupBy` (string, optional): Group by (`technician`, `client`, `status`, `date`)
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "summary": {
+      "totalWorkOrders": 100,
+      "activeWorkOrders": 25,
+      "completedWorkOrders": 60,
+      "paidWorkOrders": 15,
+      "totalRevenue": 15000.00,
+      "totalHours": 400.5
+    },
+    "byTechnician": [
+      {
+        "technicianId": "clx1234567890",
+        "technicianName": "John Doe",
+        "workOrdersCount": 15,
+        "totalHours": 60.5,
+        "totalRevenue": 1512.50
+      }
+    ],
+    "byClient": [
+      {
+        "clientId": "clx9876543210",
+        "clientName": "ABC Manufacturing",
+        "workOrdersCount": 10,
+        "totalRevenue": 2500.00
+      }
+    ],
+    "period": {
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2026-02-01T00:00:00.000Z"
+    }
+  }
+}
+```
+
+---
+
+### Technician Time Summary
+
+**Endpoint:** `GET /reports/time-summary`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Get time tracking summary for technicians.
+
+**Query Parameters:**
+- `startDate` (ISO 8601, optional): Start date
+- `endDate` (ISO 8601, optional): End date
+- `technicianId` (string, optional): Filter by specific technician
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "summary": {
+      "totalHours": 400.5,
+      "totalWorkOrders": 50,
+      "averageHoursPerWorkOrder": 8.01
+    },
+    "technicians": [
+      {
+        "technicianId": "clx1234567890",
+        "technicianName": "John Doe",
+        "totalHours": 120.5,
+        "workOrdersCount": 15,
+        "averageHoursPerWorkOrder": 8.03,
+        "earnings": 3012.50
+      }
+    ],
+    "period": {
+      "startDate": "2026-01-01T00:00:00.000Z",
+      "endDate": "2026-02-01T00:00:00.000Z"
+    }
+  }
+}
+```
+
+---
+
+### Export Data (CSV)
+
+**Endpoint:** `GET /reports/export`  
+**Authentication:** Required (JWT - ADMIN or MANAGER role)  
+**Description:** Export data as CSV file.
+
+**Query Parameters:**
+- `type` (string, required): Export type (`work-orders`, `time-entries`, `clients`, `users`)
+- `startDate` (ISO 8601, optional): Start date
+- `endDate` (ISO 8601, optional): End date
+- `format` (enum, optional): Export format (`csv`, `xlsx`) (default: `csv`)
+
+**Response (200 OK):**
+```
+Content-Type: text/csv; charset=utf-8
+Content-Disposition: attachment; filename="work-orders-2026-02-06.csv"
+
+workOrderNumber,scheduledAt,facilityName,technician,status,estimatedHours,payRate
+WO-2026-001,2026-02-10T09:00:00.000Z,ABC Manufacturing,John Doe,ACTIVE,4.5,25.0
+...
+```
+
+---
+
+## Additional Auth Features
+
+### Refresh Token
+
+**Endpoint:** `POST /auth/refresh`  
+**Authentication:** Not required (Public)  
+**Description:** Refresh access token using refresh token.
+
+**Request:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+---
+
+### Request Password Reset
+
+**Endpoint:** `POST /auth/password-reset/request`  
+**Authentication:** Not required (Public)  
+**Description:** Request password reset email.
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "If the email exists, a password reset link has been sent"
+  }
+}
+```
+
+---
+
+### Confirm Password Reset
+
+**Endpoint:** `POST /auth/password-reset/confirm`  
+**Authentication:** Not required (Public)  
+**Description:** Confirm password reset with token.
+
+**Request:**
+```json
+{
+  "token": "reset-token-from-email",
+  "newPassword": "NewSecurePass123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "Password reset successfully"
+  }
+}
+```
+
+---
+
+### Update Profile
+
+**Endpoint:** `PATCH /auth/profile`  
+**Authentication:** Required (JWT)  
+**Description:** Update authenticated user's profile.
+
+**Request:**
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "phone": "+1234567890",
+  "address": "123 Main St"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "id": "clx1234567890",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "username": "johndoe",
+    "phone": "+1234567890",
+    "address": "123 Main St",
+    "profileImageUrl": "https://...",
+    "role": "TECHNICIAN",
+    "updatedAt": "2026-02-06T15:00:00.000Z"
+  }
+}
+```
+
+---
+
+### Change Password
+
+**Endpoint:** `POST /auth/change-password`  
+**Authentication:** Required (JWT)  
+**Description:** Change user's password.
+
+**Request:**
+```json
+{
+  "currentPassword": "OldPassword123",
+  "newPassword": "NewPassword123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "message": "Password changed successfully"
+  }
 }
 ```
 
@@ -1379,23 +2878,71 @@ Future<Position> getCurrentLocation() async {
 - `POST /auth/signup` - Register new user
 - `POST /auth/signin` - Sign in
 - `POST /auth/presigned-url` - Get profile image presigned URL (public)
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/password-reset/request` - Request password reset
+- `POST /auth/password-reset/confirm` - Confirm password reset
 
 ### Technician Endpoints (JWT Required)
-- `GET /work-orders/technician/:technicianId` - Get my work orders
+- `GET /work-orders/technician` - Get my work orders
 - `GET /work-orders/:id` - Get work order details
 - `POST /work-orders/:workOrderId/attachments/presigned-url` - Get attachment presigned URL
 - `POST /work-orders/:workOrderId/attachments` - Create attachment record
+- `POST /work-orders/:workOrderId/time-entries/check-in` - Check in
+- `POST /work-orders/:workOrderId/time-entries/check-out` - Check out
+- `GET /work-orders/:workOrderId/time-entries` - Get time entries
+- `GET /equipment/search` - Search equipment (fuzzy search)
+- `POST /work-orders/:workOrderId/equipment` - Add catalog equipment to work order (pre-approved)
+- `POST /work-orders/:workOrderId/equipment/custom` - Add custom equipment (requires approval)
 - `POST /auth/profile/presigned-url` - Get profile image presigned URL
 - `PATCH /auth/profile/image` - Update profile image
+- `PATCH /auth/profile` - Update profile
+- `POST /auth/change-password` - Change password
+- `GET /notifications` - Get notifications
+- `GET /notifications/unread-count` - Get unread count
+- `PATCH /notifications/:id/read` - Mark notification as read
 
 ### Admin/Manager Endpoints (JWT + ADMIN/MANAGER Role)
+- `GET /work-orders` - List all work orders (with filters & pagination)
+- `POST /work-orders` - Create work order
+- `PATCH /work-orders/:id` - Update work order
+- `POST /work-orders/:id/duplicate` - Duplicate work order
+- `GET /work-order-templates` - List templates
+- `GET /work-order-templates/:id` - Get template details
+- `POST /work-order-templates` - Create template
+- `PATCH /work-order-templates/:id` - Update template
+- `DELETE /work-order-templates/:id` - Delete template
+- `GET /clients` - Get all clients
+- `GET /clients/:id` - Get client details
+- `POST /clients` - Create client
+- `PATCH /clients/:id` - Update client
+- `GET /reports/work-orders` - Work order reports
+- `GET /reports/time-summary` - Time summary
+- `GET /reports/export` - Export data
+- `GET /equipment/pending-approvals` - Get pending equipment approvals
+- `POST /equipment/:id/approve` - Approve custom equipment
+- `POST /equipment/:id/reject` - Reject custom equipment
+
+### Admin Only Endpoints (JWT + ADMIN Role)
+- `DELETE /work-orders/:id` - Delete work order
+- `DELETE /clients/:id` - Delete client
+- `GET /users` - List all users
+- `GET /users/managers-and-technicians` - Get all managers and technicians with details
+- `GET /users/:id` - Get user details
+- `PATCH /users/:id` - Update user
+- `POST /users/:id/reset-password` - Reset user password (technicians/managers only)
+- `DELETE /users/:id` - Delete user
+- `PATCH /time-entries/:id` - Edit time entry (with audit)
+- `GET /equipment` - List all equipment
+- `GET /equipment/:id` - Get equipment details
+- `POST /equipment` - Create equipment
+- `PATCH /equipment/:id` - Update equipment
+- `DELETE /equipment/:id` - Delete equipment
 - `GET /admin/employees/whitelist` - List whitelisted emails
 - `POST /admin/employees/whitelist` - Whitelist single email
 - `POST /admin/employees/whitelist/bulk` - Whitelist multiple emails
 - `POST /admin/employees` - Create employee account
 - `DELETE /admin/employees/whitelist/:email` - Remove from whitelist
 - `GET /users/technicians` - Get all technicians
-- `GET /clients` - Get all clients
 
 ---
 
@@ -1418,7 +2965,7 @@ The following endpoints are planned but not yet implemented:
 
 ### Work Order Management
 - `POST /work-orders` - Create work order (Admin/Manager)
-- `PATCH /work-orders/:id` - Update work order (Admin/Manager)
+- `PATCH /work-orders/:id` - Update work order (Admin/Manager can update all fields, Technician can update photos/notes/tasks/status)
 - `DELETE /work-orders/:id` - Delete work order (Admin)
 - `POST /work-orders/:id/duplicate` - Duplicate work order (Admin/Manager)
 - ✅ `GET /work-orders` - List all work orders with filters (Admin/Manager) - **IMPLEMENTED**

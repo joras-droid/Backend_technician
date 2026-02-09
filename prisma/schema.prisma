@@ -14,22 +14,25 @@ model User {
 
   firstName String
   lastName  String
-  email     String   @unique
+  email     String  @unique
   phone     String?
   address   String?
 
-  username      String   @unique
-  password      String   // hashed
+  username        String  @unique
+  password        String // hashed
   profileImageUrl String? // S3 URL for profile image
 
-  role        UserRole
-  whitelisted Boolean  @default(false) // Only whitelisted emails can signup/signin
+  role           UserRole
+  whitelisted    Boolean  @default(false) // Only whitelisted emails can signup/signin
+  defaultPayRate Float? // Default pay rate for technicians (set by admin/manager)
 
-  workOrdersAssigned WorkOrder[] @relation("AssignedTechnician")
-  timeEntries        TimeEntry[]
-  auditLogs          AuditLog[]  @relation("AuditActor")
-  notifications      Notification[]
-  timeEntryEdits     TimeEntryEdit[] @relation("AuditActor")
+  workOrdersAssigned   WorkOrder[]          @relation("AssignedTechnician")
+  timeEntries          TimeEntry[]
+  auditLogs            AuditLog[]           @relation("AuditActor")
+  notifications        Notification[]
+  timeEntryEdits       TimeEntryEdit[]      @relation("AuditActor")
+  customEquipmentAdded WorkOrderEquipment[] @relation("CustomEquipmentAddedBy")
+  equipmentApproved    WorkOrderEquipment[] @relation("EquipmentApprovedBy")
 }
 
 enum UserRole {
@@ -43,11 +46,11 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  notes     String?
+  name    String
+  email   String?
+  phone   String?
+  address String?
+  notes   String?
 
   workOrders WorkOrder[]
 }
@@ -57,19 +60,19 @@ model WorkOrderTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name      String
-  tasks     String?  // JSON or newline-delimited
-  notes     String?
+  name  String
+  tasks String? // JSON or newline-delimited
+  notes String?
 
   workOrders WorkOrder[]
 }
 
 model WorkOrder {
-  id            String            @id @default(cuid())
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  workOrderNumber String          @unique
+  workOrderNumber String   @unique
   scheduledAt     DateTime
   estimatedHours  Float?
   payRate         Float?
@@ -80,21 +83,24 @@ model WorkOrder {
   tasks           String?
   notes           String?
 
-  status          WorkOrderStatus @default(ACTIVE)
-  invoiceNumber   String?
+  status        WorkOrderStatus @default(ACTIVE)
+  invoiceNumber String?
 
-  clientId        String?
-  client          Client?         @relation(fields: [clientId], references: [id])
+  beforeWorkPhotos String[] @default([]) // Array of S3 URLs for before-work photos
+  afterWorkPhotos  String[] @default([]) // Array of S3 URLs for after-work photos
 
-  technicianId    String?
-  technician      User?           @relation("AssignedTechnician", fields: [technicianId], references: [id])
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
 
-  templateId      String?
-  template        WorkOrderTemplate? @relation(fields: [templateId], references: [id])
+  technicianId String?
+  technician   User?   @relation("AssignedTechnician", fields: [technicianId], references: [id])
 
-  equipment       WorkOrderEquipment[]
-  attachments     Attachment[]
-  timeEntries     TimeEntry[]
+  templateId String?
+  template   WorkOrderTemplate? @relation(fields: [templateId], references: [id])
+
+  equipment   WorkOrderEquipment[]
+  attachments Attachment[]
+  timeEntries TimeEntry[]
 }
 
 enum WorkOrderStatus {
@@ -103,24 +109,61 @@ enum WorkOrderStatus {
   PAID
 }
 
+model Equipment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name                String               @unique
+  description         String?
+  price               Float // Mandatory price
+  minRange            Float? // Optional min range
+  maxRange            Float? // Optional max range
+  vendor              String?
+  isActive            Boolean              @default(true)
+  workOrderEquipments WorkOrderEquipment[]
+}
+
 model WorkOrderEquipment {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   workOrderId String
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
 
-  name        String
-  quantity    Int       @default(1)
+  name     String
+  quantity Int    @default(1)
 
-  cost        Float?
-  vendor      String?
+  cost       Float // Mandatory cost
+  vendor     String?
+  receiptUrl String? // Optional receipt URL (S3)
+
+  // Custom equipment fields
+  isCustom            Boolean @default(false)
+  addedByTechnicianId String?
+  addedByTechnician   User?   @relation("CustomEquipmentAddedBy", fields: [addedByTechnicianId], references: [id])
+
+  // Approval workflow
+  approvalStatus  EquipmentApprovalStatus @default(PENDING)
+  approvedById    String?
+  approvedBy      User?                   @relation("EquipmentApprovedBy", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  equipmentId String? // Reference to Equipment catalog (if using catalog item)
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
+}
+
+enum EquipmentApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model Attachment {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   workOrderId String
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
@@ -131,67 +174,71 @@ model Attachment {
 }
 
 model TimeEntry {
-  id          String         @id @default(cuid())
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   workOrderId String
-  workOrder   WorkOrder      @relation(fields: [workOrderId], references: [id])
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
 
   technicianId String
-  technician   User          @relation(fields: [technicianId], references: [id])
+  technician   User   @relation(fields: [technicianId], references: [id])
 
-  checkInAt    DateTime?
-  checkInLat   Float?
-  checkInLng   Float?
+  checkInAt  DateTime?
+  checkInLat Float?
+  checkInLng Float?
 
-  checkOutAt   DateTime?
-  checkOutLat  Float?
-  checkOutLng  Float?
+  checkOutAt  DateTime?
+  checkOutLat Float?
+  checkOutLng Float?
 
-  edits        TimeEntryEdit[]
+  edits TimeEntryEdit[]
 }
 
 model TimeEntryEdit {
-  id            String      @id @default(cuid())
-  createdAt     DateTime    @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
-  timeEntryId   String
-  timeEntry     TimeEntry   @relation(fields: [timeEntryId], references: [id])
+  timeEntryId String
+  timeEntry   TimeEntry @relation(fields: [timeEntryId], references: [id])
 
   field         String
   originalValue String?
   updatedValue  String?
 
-  editedById    String
-  editedBy      User        @relation("AuditActor", fields: [editedById], references: [id])
+  editedById String
+  editedBy   User   @relation("AuditActor", fields: [editedById], references: [id])
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  actorId   String?
-  actor     User?    @relation("AuditActor", fields: [actorId], references: [id])
+  actorId String?
+  actor   User?   @relation("AuditActor", fields: [actorId], references: [id])
 
-  entity    String
-  entityId  String
-  action    String
-  meta      String?  // JSON
+  entity   String
+  entityId String
+  action   String
+  meta     String? // JSON
 }
 
 model Notification {
-  id        String       @id @default(cuid())
-  createdAt DateTime     @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
-  userId    String
-  user      User         @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  type      NotificationType
-  channel   NotificationChannel
+  type    NotificationType
+  channel NotificationChannel
 
-  title     String
-  message   String
+  title   String
+  message String
+
+  // Reference to related entity (e.g., workOrderId, equipmentId)
+  entityId   String?
+  entityType String? // e.g., 'workOrder', 'equipment'
 
   deliveredAt DateTime?
   readAt      DateTime?
@@ -202,10 +249,12 @@ enum NotificationType {
   WORK_ORDER_UPDATED
   WORK_ORDER_REMINDER
   TIME_ENTRY_EDITED
+  EQUIPMENT_APPROVAL_REQUIRED
+  EQUIPMENT_APPROVED
+  EQUIPMENT_REJECTED
 }
 
 enum NotificationChannel {
   EMAIL
   PUSH
 }
-

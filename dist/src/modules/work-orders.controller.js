@@ -39,8 +39,20 @@ let WorkOrdersController = class WorkOrdersController {
     getForTechnician(technicianId) {
         return this.workOrdersService.findAllForTechnician(technicianId);
     }
+    async create(dto, req) {
+        return this.workOrdersService.create(dto, req.user.id);
+    }
+    async update(id, dto, req) {
+        return this.workOrdersService.update(id, dto, req.user.id, req.user.role);
+    }
+    async duplicate(id, dto, req) {
+        return this.workOrdersService.duplicate(id, dto, req.user.id);
+    }
     getOne(id) {
         return this.workOrdersService.findOne(id);
+    }
+    async delete(id, req) {
+        return this.workOrdersService.delete(id, req.user.id);
     }
     async getAttachmentPresignedUrl(workOrderId, dto) {
         const { fileName, contentType, attachmentType, description } = dto;
@@ -123,9 +135,11 @@ __decorate([
 ], WorkOrdersController.prototype, "getAllWorkOrders", null);
 __decorate([
     (0, common_1.Get)('technician'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.TECHNICIAN),
     (0, swagger_1.ApiOperation)({
-        summary: 'Get my work orders',
-        description: 'Retrieve all work orders assigned to the authenticated technician. Active work orders are prioritized.',
+        summary: 'Get my work orders (Technician only)',
+        description: 'Retrieve all work orders assigned to the authenticated technician. Active work orders are prioritized. This endpoint is only available to TECHNICIAN role.',
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
@@ -144,6 +158,7 @@ __decorate([
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Technician role required' }),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -151,6 +166,8 @@ __decorate([
 ], WorkOrdersController.prototype, "getMyWorkOrders", null);
 __decorate([
     (0, common_1.Get)('technician/:technicianId'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER),
     (0, swagger_1.ApiOperation)({
         summary: 'Get work orders for a technician (Admin/Manager)',
         description: 'Retrieve all work orders assigned to a specific technician. Requires admin or manager role.',
@@ -177,11 +194,94 @@ __decorate([
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
     __param(0, (0, common_1.Param)('technicianId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], WorkOrdersController.prototype, "getForTechnician", null);
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Create work order (Admin/Manager)',
+        description: 'Create a new work order and assign it to a technician',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: 'Work order created successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Validation error' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Client or technician not found' }),
+    (0, swagger_1.ApiResponse)({ status: 409, description: 'Work order number already exists' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [work_order_dto_1.CreateWorkOrderDto, Object]),
+    __metadata("design:returntype", Promise)
+], WorkOrdersController.prototype, "create", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER, client_1.UserRole.TECHNICIAN),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Update work order',
+        description: 'Update an existing work order. Technicians can update photos, notes, tasks, and status. Admin/Manager can update all fields.',
+    }),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        description: 'Work order ID',
+        example: 'clx1234567890',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Work order updated successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Validation error' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Work order not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, work_order_dto_1.UpdateWorkOrderDto, Object]),
+    __metadata("design:returntype", Promise)
+], WorkOrdersController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/duplicate'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Duplicate work order (Admin/Manager)',
+        description: 'Create a duplicate of an existing work order with optional modifications',
+    }),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        description: 'Work order ID to duplicate',
+        example: 'clx1234567890',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: 'Work order duplicated successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Validation error' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Work order not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, work_order_dto_1.DuplicateWorkOrderDto, Object]),
+    __metadata("design:returntype", Promise)
+], WorkOrdersController.prototype, "duplicate", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({
@@ -204,6 +304,33 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], WorkOrdersController.prototype, "getOne", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Delete work order (Admin only)',
+        description: 'Delete a work order. Only admins can delete work orders.',
+    }),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        description: 'Work order ID',
+        example: 'clx1234567890',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Work order deleted successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin role required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Work order not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], WorkOrdersController.prototype, "delete", null);
 __decorate([
     (0, common_1.Post)(':workOrderId/attachments/presigned-url'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

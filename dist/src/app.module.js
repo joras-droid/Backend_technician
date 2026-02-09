@@ -18,6 +18,11 @@ const clients_module_1 = require("./modules/clients/clients.module");
 const work_orders_module_1 = require("./modules/work-orders/work-orders.module");
 const auth_module_1 = require("./modules/auth/auth.module");
 const admin_module_1 = require("./modules/admin/admin.module");
+const templates_module_1 = require("./modules/templates/templates.module");
+const time_entries_module_1 = require("./modules/time-entries/time-entries.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
+const reports_module_1 = require("./modules/reports/reports.module");
+const equipment_module_1 = require("./modules/equipment/equipment.module");
 const s3_module_1 = require("./common/services/s3.module");
 const logger_module_1 = require("./common/services/logger.module");
 const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
@@ -39,6 +44,11 @@ exports.AppModule = AppModule = __decorate([
             work_orders_module_1.WorkOrdersModule,
             auth_module_1.AuthModule,
             admin_module_1.AdminModule,
+            templates_module_1.TemplatesModule,
+            time_entries_module_1.TimeEntriesModule,
+            notifications_module_1.NotificationsModule,
+            reports_module_1.ReportsModule,
+            equipment_module_1.EquipmentModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

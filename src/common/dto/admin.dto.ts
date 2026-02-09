@@ -6,7 +6,10 @@ import {
   IsOptional,
   IsEnum,
   IsArray,
+  IsNumber,
+  Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
@@ -74,6 +77,17 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @ApiPropertyOptional({
+    description: 'Default pay rate for technician (hourly)',
+    example: 25.0,
+    minimum: 0,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  defaultPayRate?: number;
 }
 
 export class WhitelistEmailDto {

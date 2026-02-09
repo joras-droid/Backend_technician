@@ -1,5 +1,8 @@
-import { IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsOptional,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ProfileImageUrlDto {
   @ApiProperty({
@@ -25,4 +28,38 @@ export class ProfilePresignedUrlRequestDto {
   })
   @IsString()
   contentType: string;
+}
+
+export class UpdateProfileDto {
+  @ApiPropertyOptional({
+    example: 'John',
+    description: 'First name',
+  })
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiPropertyOptional({
+    example: 'Doe',
+    description: 'Last name',
+  })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @ApiPropertyOptional({
+    example: '+1234567890',
+    description: 'Phone number',
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({
+    example: '123 Main St',
+    description: 'Address',
+  })
+  @IsOptional()
+  @IsString()
+  address?: string;
 }

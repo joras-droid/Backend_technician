@@ -2,8 +2,9 @@ import { WorkOrderStatus } from '@prisma/client';
 export declare class CreateWorkOrderEquipmentDto {
     name: string;
     quantity: number;
-    cost?: number;
+    cost: number;
     vendor?: string;
+    equipmentId?: string;
 }
 export declare class CreateWorkOrderDto {
     workOrderNumber?: string;
@@ -39,6 +40,8 @@ export declare class UpdateWorkOrderDto {
     clientId?: string;
     technicianId?: string;
     invoiceNumber?: string;
+    beforeWorkPhotos?: string[];
+    afterWorkPhotos?: string[];
 }
 export declare class CreateAttachmentDto {
     workOrderId: string;

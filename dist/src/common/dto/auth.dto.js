@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PresignedUrlResponseDto = exports.RequestPresignedUrlDto = exports.RefreshTokenDto = exports.SignInDto = exports.SignUpDto = void 0;
+exports.PresignedUrlResponseDto = exports.RequestPresignedUrlDto = exports.SignInDto = exports.ChangePasswordDto = exports.PasswordResetConfirmDto = exports.PasswordResetRequestDto = exports.RefreshTokenDto = exports.SignUpDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
@@ -59,16 +59,20 @@ __decorate([
 ], SignUpDto.prototype, "email", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: 'Username (alphanumeric and underscores only)',
+        description: 'Username (alphanumeric and underscores only, no spaces or special characters)',
         example: 'johndoe',
         minLength: 3,
         maxLength: 30,
     }),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(3),
-    (0, class_validator_1.MaxLength)(30),
+    (0, class_validator_1.MinLength)(3, {
+        message: 'Username must be at least 3 characters long',
+    }),
+    (0, class_validator_1.MaxLength)(30, {
+        message: 'Username must not exceed 30 characters',
+    }),
     (0, class_validator_1.Matches)(/^[a-zA-Z0-9_]+$/, {
-        message: 'Username can only contain letters, numbers, and underscores',
+        message: 'Username can only contain letters (a-z, A-Z), numbers (0-9), and underscores (_). No spaces or special characters allowed.',
     }),
     __metadata("design:type", String)
 ], SignUpDto.prototype, "username", void 0);
@@ -123,6 +127,82 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignUpDto.prototype, "profileImageUrl", void 0);
+class RefreshTokenDto {
+    refreshToken;
+}
+exports.RefreshTokenDto = RefreshTokenDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        description: 'Refresh token',
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RefreshTokenDto.prototype, "refreshToken", void 0);
+class PasswordResetRequestDto {
+    email;
+}
+exports.PasswordResetRequestDto = PasswordResetRequestDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'User email address',
+        example: 'user@example.com',
+    }),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], PasswordResetRequestDto.prototype, "email", void 0);
+class PasswordResetConfirmDto {
+    token;
+    newPassword;
+}
+exports.PasswordResetConfirmDto = PasswordResetConfirmDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Password reset token from email',
+        example: 'reset-token-from-email',
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PasswordResetConfirmDto.prototype, "token", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'New password',
+        example: 'NewSecurePass123',
+        minLength: 8,
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(8),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    }),
+    __metadata("design:type", String)
+], PasswordResetConfirmDto.prototype, "newPassword", void 0);
+class ChangePasswordDto {
+    currentPassword;
+    newPassword;
+}
+exports.ChangePasswordDto = ChangePasswordDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Current password',
+        example: 'OldPassword123',
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ChangePasswordDto.prototype, "currentPassword", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'New password',
+        example: 'NewPassword123',
+        minLength: 8,
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(8),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    }),
+    __metadata("design:type", String)
+], ChangePasswordDto.prototype, "newPassword", void 0);
 class SignInDto {
     username;
     password;
@@ -144,18 +224,6 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignInDto.prototype, "password", void 0);
-class RefreshTokenDto {
-    refreshToken;
-}
-exports.RefreshTokenDto = RefreshTokenDto;
-__decorate([
-    (0, swagger_1.ApiProperty)({
-        description: 'Refresh token',
-        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    }),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], RefreshTokenDto.prototype, "refreshToken", void 0);
 class RequestPresignedUrlDto {
     fileName;
     contentType;

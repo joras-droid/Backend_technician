@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmployeeResponseDto = exports.WhitelistEmailsDto = exports.WhitelistEmailDto = exports.CreateEmployeeDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 class CreateEmployeeDto {
@@ -21,6 +22,7 @@ class CreateEmployeeDto {
     phone;
     address;
     role;
+    defaultPayRate;
 }
 exports.CreateEmployeeDto = CreateEmployeeDto;
 __decorate([
@@ -94,6 +96,18 @@ __decorate([
     (0, class_validator_1.IsEnum)(client_1.UserRole),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "role", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Default pay rate for technician (hourly)',
+        example: 25.0,
+        minimum: 0,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], CreateEmployeeDto.prototype, "defaultPayRate", void 0);
 class WhitelistEmailDto {
     email;
     firstName;

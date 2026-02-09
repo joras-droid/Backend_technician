@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -22,16 +23,23 @@ export class CreateWorkOrderEquipmentDto {
   @Min(1)
   quantity: number;
 
-  @ApiPropertyOptional({ example: 45.99, description: 'Cost per unit', minimum: 0 })
-  @IsOptional()
+  @ApiProperty({ example: 45.99, description: 'Cost per unit (mandatory)', minimum: 0 })
   @IsNumber()
   @Min(0)
-  cost?: number;
+  cost: number;
 
   @ApiPropertyOptional({ example: 'Home Depot', description: 'Vendor name' })
   @IsOptional()
   @IsString()
   vendor?: string;
+
+  @ApiPropertyOptional({
+    example: 'clx1111111111',
+    description: 'Equipment catalog ID (if using catalog item)',
+  })
+  @IsOptional()
+  @IsString()
+  equipmentId?: string;
 }
 
 export class CreateWorkOrderDto {
@@ -181,6 +189,32 @@ export class UpdateWorkOrderDto {
   @IsOptional()
   @IsString()
   invoiceNumber?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: [
+      'https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo1.jpg',
+      'https://bucket.s3.region.amazonaws.com/work-orders/wo123/before/photo2.jpg',
+    ],
+    description: 'Array of S3 URLs for before-work photos',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUrl({}, { each: true })
+  beforeWorkPhotos?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: [
+      'https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo1.jpg',
+      'https://bucket.s3.region.amazonaws.com/work-orders/wo123/after/photo2.jpg',
+    ],
+    description: 'Array of S3 URLs for after-work photos',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUrl({}, { each: true })
+  afterWorkPhotos?: string[];
 }
 
 export class CreateAttachmentDto {

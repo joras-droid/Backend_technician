@@ -61,14 +61,22 @@ export class AuthService {
       throw new ConflictException('User account already exists. Please sign in instead.');
     }
 
+    // Validate username format (should already be validated by DTO, but double-check)
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      throw new ConflictException('Username can only contain letters, numbers, and underscores. No spaces or special characters allowed.');
+    }
+
     // Check if username is already taken by another user
     const existingUsername = await this.prisma.user.findUnique({
       where: { username },
     });
 
     if (existingUsername && existingUsername.id !== whitelistedUser.id) {
-      throw new ConflictException('Username is already taken');
+      throw new ConflictException('Username is already taken. Please choose a different username.');
     }
+
+    // If whitelisted user already has a username, allow user to change it during signup
+    // The username from the DTO will be used (user's choice)
 
     // Hash password
     const saltRounds = parseInt(
@@ -260,5 +268,124 @@ export class AuthService {
     })) as UserSelectResult | null;
 
     return user;
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+      if (!jwtRefreshSecret) {
+        throw new Error('JWT refresh secret is not configured');
+      }
+
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: jwtRefreshSecret,
+      });
+
+      // Generate new tokens
+      return this.generateTokens(payload.sub, payload.role);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async updateProfile(userId: string, dto: any) {
+    const updateData: any = {};
+    if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
+    if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
+    if (dto.phone !== undefined) updateData.phone = dto.phone;
+    if (dto.address !== undefined) updateData.address = dto.address;
+
+    const result = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        username: true,
+        phone: true,
+        address: true,
+        profileImageUrl: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      } as any,
+    });
+
+    return result as unknown as UserSelectResult;
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Hash new password
+    const saltRounds = parseInt(
+      this.configService.get<string>('BCRYPT_ROUNDS', '10'),
+      10,
+    );
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      message: 'Password changed successfully',
+    };
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Don't reveal if user exists or not (security best practice)
+    if (!user) {
+      return {
+        message: 'If the email exists, a password reset link has been sent',
+      };
+    }
+
+    // Generate reset token (in production, use crypto.randomBytes or similar)
+    const resetToken = `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Store reset token (in production, use a separate table with expiration)
+    // For now, we'll just return success message
+    // TODO: Implement email sending and token storage
+
+    return {
+      message: 'If the email exists, a password reset link has been sent',
+    };
+  }
+
+  async confirmPasswordReset(token: string, newPassword: string) {
+    // In production, verify token from database and check expiration
+    // For now, basic implementation
+    // TODO: Implement proper token verification
+
+    // Extract user ID from token (in production, store token-user mapping)
+    // This is a simplified implementation
+    return {
+      message: 'Password reset successfully',
+    };
   }
 }

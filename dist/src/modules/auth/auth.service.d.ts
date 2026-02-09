@@ -49,5 +49,19 @@ export declare class AuthService {
     updateProfileImage(userId: string, profileImageUrl: string): Promise<UserSelectResult>;
     private generateTokens;
     validateUser(userId: string): Promise<UserSelectResult | null>;
+    refreshToken(refreshToken: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+    }>;
+    updateProfile(userId: string, dto: any): Promise<UserSelectResult>;
+    changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{
+        message: string;
+    }>;
+    requestPasswordReset(email: string): Promise<{
+        message: string;
+    }>;
+    confirmPasswordReset(token: string, newPassword: string): Promise<{
+        message: string;
+    }>;
 }
 export {};

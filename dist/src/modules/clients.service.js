@@ -22,6 +22,98 @@ let ClientsService = class ClientsService {
             orderBy: { name: 'asc' },
         });
     }
+    async findOne(id) {
+        const client = await this.prisma.client.findUnique({
+            where: { id },
+            include: {
+                _count: {
+                    select: {
+                        workOrders: true,
+                    },
+                },
+            },
+        });
+        if (!client) {
+            throw new common_1.NotFoundException('Client not found');
+        }
+        return {
+            ...client,
+            workOrdersCount: client._count.workOrders,
+        };
+    }
+    async create(dto) {
+        if (dto.email) {
+            const existing = await this.prisma.client.findFirst({
+                where: { email: dto.email },
+            });
+            if (existing) {
+                throw new common_1.ConflictException('Client with this email already exists');
+            }
+        }
+        return this.prisma.client.create({
+            data: {
+                name: dto.name,
+                email: dto.email,
+                phone: dto.phone,
+                address: dto.address,
+                notes: dto.notes,
+            },
+        });
+    }
+    async update(id, dto) {
+        const client = await this.prisma.client.findUnique({
+            where: { id },
+        });
+        if (!client) {
+            throw new common_1.NotFoundException('Client not found');
+        }
+        if (dto.email && dto.email !== client.email) {
+            const existing = await this.prisma.client.findFirst({
+                where: {
+                    email: dto.email,
+                    id: { not: id },
+                },
+            });
+            if (existing) {
+                throw new common_1.ConflictException('Client with this email already exists');
+            }
+        }
+        return this.prisma.client.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                email: dto.email,
+                phone: dto.phone,
+                address: dto.address,
+                notes: dto.notes,
+            },
+        });
+    }
+    async delete(id) {
+        const client = await this.prisma.client.findUnique({
+            where: { id },
+            include: {
+                _count: {
+                    select: {
+                        workOrders: true,
+                    },
+                },
+            },
+        });
+        if (!client) {
+            throw new common_1.NotFoundException('Client not found');
+        }
+        if (client._count.workOrders > 0) {
+            throw new common_1.BadRequestException('Cannot delete client with associated work orders');
+        }
+        await this.prisma.client.delete({
+            where: { id },
+        });
+        return {
+            message: 'Client deleted successfully',
+            id,
+        };
+    }
 };
 exports.ClientsService = ClientsService;
 exports.ClientsService = ClientsService = __decorate([
