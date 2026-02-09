@@ -1,74 +1,160 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAttachmentDto } from '../common/dto/work-order.dto';
+import { CreateAttachmentDto, ListWorkOrdersQueryDto } from '../common/dto/work-order.dto';
 export declare class WorkOrdersService {
     private readonly prisma;
     constructor(prisma: PrismaService);
-    findAllForTechnician(technicianId: string): import(".prisma/client").Prisma.PrismaPromise<({
-        client: {
-            id: string;
+    findAll(query: ListWorkOrdersQueryDto): Promise<{
+        data: ({
+            client: {
+                id: string;
+                name: string;
+                email: string | null;
+                phone: string | null;
+            } | null;
+            technician: {
+                id: string;
+                email: string;
+                phone: string | null;
+                firstName: string;
+                lastName: string;
+                profileImageUrl: string | null;
+            } | null;
+            equipment: {
+                createdAt: Date;
+                updatedAt: Date;
+                id: string;
+                name: string;
+                workOrderId: string;
+                quantity: number;
+                cost: number | null;
+                vendor: string | null;
+            }[];
+            attachments: {
+                createdAt: Date;
+                id: string;
+                workOrderId: string;
+                url: string;
+                type: string | null;
+                description: string | null;
+            }[];
+        } & {
+            scheduledAt: Date;
             createdAt: Date;
             updatedAt: Date;
+            workOrderNumber: string;
+            id: string;
+            estimatedHours: number | null;
+            payRate: number | null;
+            facilityName: string;
+            facilityAddress: string;
+            pointOfContact: string | null;
+            tasks: string | null;
+            notes: string | null;
+            status: import(".prisma/client").$Enums.WorkOrderStatus;
+            invoiceNumber: string | null;
+            clientId: string | null;
+            technicianId: string | null;
+            templateId: string | null;
+        })[];
+        pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+    }>;
+    findAllForTechnician(technicianId: string): import(".prisma/client").Prisma.PrismaPromise<({
+        client: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: string;
+            notes: string | null;
+            name: string;
             email: string | null;
             phone: string | null;
             address: string | null;
-            name: string;
-            notes: string | null;
+        } | null;
+        technician: {
+            id: string;
+            email: string;
+            phone: string | null;
+            firstName: string;
+            lastName: string;
         } | null;
         equipment: {
-            id: string;
             createdAt: Date;
             updatedAt: Date;
+            id: string;
             name: string;
+            workOrderId: string;
             quantity: number;
             cost: number | null;
             vendor: string | null;
-            workOrderId: string;
         }[];
-        technician: {
-            id: string;
-            firstName: string;
-            lastName: string;
-            email: string;
-            phone: string | null;
-        } | null;
         attachments: {
-            description: string | null;
-            id: string;
             createdAt: Date;
-            type: string | null;
+            id: string;
             workOrderId: string;
             url: string;
+            type: string | null;
+            description: string | null;
         }[];
     } & {
-        id: string;
+        scheduledAt: Date;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         workOrderNumber: string;
-        scheduledAt: Date;
+        id: string;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
+        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
+        invoiceNumber: string | null;
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
-        invoiceNumber: string | null;
     })[]>;
     findOne(id: string): import(".prisma/client").Prisma.Prisma__WorkOrderClient<({
         client: {
-            id: string;
             createdAt: Date;
             updatedAt: Date;
+            id: string;
+            notes: string | null;
+            name: string;
             email: string | null;
             phone: string | null;
             address: string | null;
-            name: string;
-            notes: string | null;
         } | null;
+        technician: {
+            id: string;
+            email: string;
+            phone: string | null;
+            firstName: string;
+            lastName: string;
+            profileImageUrl: string | null;
+        } | null;
+        equipment: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: string;
+            name: string;
+            workOrderId: string;
+            quantity: number;
+            cost: number | null;
+            vendor: string | null;
+        }[];
+        attachments: {
+            createdAt: Date;
+            id: string;
+            workOrderId: string;
+            url: string;
+            type: string | null;
+            description: string | null;
+        }[];
         timeEntries: ({
             technician: {
                 id: string;
@@ -76,9 +162,9 @@ export declare class WorkOrdersService {
                 lastName: string;
             };
         } & {
-            id: string;
             createdAt: Date;
             updatedAt: Date;
+            id: string;
             technicianId: string;
             workOrderId: string;
             checkInAt: Date | null;
@@ -88,57 +174,31 @@ export declare class WorkOrdersService {
             checkOutLat: number | null;
             checkOutLng: number | null;
         })[];
-        equipment: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            quantity: number;
-            cost: number | null;
-            vendor: string | null;
-            workOrderId: string;
-        }[];
-        technician: {
-            id: string;
-            firstName: string;
-            lastName: string;
-            email: string;
-            phone: string | null;
-            profileImageUrl: string | null;
-        } | null;
-        attachments: {
-            description: string | null;
-            id: string;
-            createdAt: Date;
-            type: string | null;
-            workOrderId: string;
-            url: string;
-        }[];
     } & {
-        id: string;
+        scheduledAt: Date;
         createdAt: Date;
         updatedAt: Date;
-        notes: string | null;
         workOrderNumber: string;
-        scheduledAt: Date;
+        id: string;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
+        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
+        invoiceNumber: string | null;
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
-        invoiceNumber: string | null;
     }) | null, null, import("@prisma/client/runtime/library").DefaultArgs, import(".prisma/client").Prisma.PrismaClientOptions>;
     createAttachment(workOrderId: string, dto: CreateAttachmentDto, userId: string): Promise<{
-        description: string | null;
-        id: string;
         createdAt: Date;
-        type: string | null;
+        id: string;
         workOrderId: string;
         url: string;
+        type: string | null;
+        description: string | null;
     }>;
 }

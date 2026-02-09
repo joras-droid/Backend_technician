@@ -4,14 +4,14 @@ export declare class UsersService {
     constructor(prisma: PrismaService);
     findTechnicians(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
+        email: string;
+        username: string;
         createdAt: Date;
         updatedAt: Date;
         firstName: string;
         lastName: string;
-        email: string;
         phone: string | null;
         address: string | null;
-        username: string;
         password: string;
         profileImageUrl: string | null;
         role: import(".prisma/client").$Enums.UserRole;

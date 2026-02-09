@@ -12,4 +12,5 @@ export default defineConfig({
     // Non-null assertion because DATABASE_URL must be defined at runtime
     url: process.env["DATABASE_URL"] as string,
   },
+  // Note: Seed configuration is in package.json, not here (Prisma 6)
 });

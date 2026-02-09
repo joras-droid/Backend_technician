@@ -130,7 +130,7 @@ class SignInDto {
 exports.SignInDto = SignInDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: 'Username',
+        description: 'Username or email address',
         example: 'johndoe',
     }),
     (0, class_validator_1.IsString)(),

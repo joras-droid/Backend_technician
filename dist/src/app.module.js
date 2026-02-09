@@ -19,6 +19,8 @@ const work_orders_module_1 = require("./modules/work-orders/work-orders.module")
 const auth_module_1 = require("./modules/auth/auth.module");
 const admin_module_1 = require("./modules/admin/admin.module");
 const s3_module_1 = require("./common/services/s3.module");
+const logger_module_1 = require("./common/services/logger.module");
+const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
 const jwt_auth_guard_1 = require("./modules/auth/guards/jwt-auth.guard");
 let AppModule = class AppModule {
 };
@@ -31,6 +33,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             prisma_module_1.PrismaModule,
             s3_module_1.S3Module,
+            logger_module_1.LoggerModule,
             users_module_1.UsersModule,
             clients_module_1.ClientsModule,
             work_orders_module_1.WorkOrdersModule,
@@ -43,6 +46,10 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_1.APP_GUARD,
                 useClass: jwt_auth_guard_1.JwtAuthGuard,
+            },
+            {
+                provide: core_1.APP_INTERCEPTOR,
+                useClass: logging_interceptor_1.LoggingInterceptor,
             },
         ],
     })

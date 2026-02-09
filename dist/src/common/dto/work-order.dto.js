@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RequestAttachmentPresignedUrlDto = exports.CreateAttachmentDto = exports.UpdateWorkOrderDto = exports.CreateWorkOrderDto = exports.CreateWorkOrderEquipmentDto = void 0;
+exports.ListWorkOrdersQueryDto = exports.RequestAttachmentPresignedUrlDto = exports.CreateAttachmentDto = exports.UpdateWorkOrderDto = exports.DuplicateWorkOrderDto = exports.CreateWorkOrderDto = exports.CreateWorkOrderEquipmentDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const swagger_1 = require("@nestjs/swagger");
@@ -63,10 +63,19 @@ class CreateWorkOrderDto {
 }
 exports.CreateWorkOrderDto = CreateWorkOrderDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 'WO-2026-001',
+        description: 'Work order number (auto-generated if not provided)',
+    }),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateWorkOrderDto.prototype, "workOrderNumber", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        example: '2026-02-10T09:00:00.000Z',
+        description: 'Scheduled date and time (ISO 8601)',
+    }),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], CreateWorkOrderDto.prototype, "scheduledAt", void 0);
@@ -126,12 +135,49 @@ __decorate([
     __metadata("design:type", String)
 ], CreateWorkOrderDto.prototype, "templateId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        type: [CreateWorkOrderEquipmentDto],
+        description: 'Equipment list',
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => CreateWorkOrderEquipmentDto),
     __metadata("design:type", Array)
 ], CreateWorkOrderDto.prototype, "equipment", void 0);
+class DuplicateWorkOrderDto {
+    scheduledAt;
+    technicianId;
+    status;
+}
+exports.DuplicateWorkOrderDto = DuplicateWorkOrderDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: '2026-02-15T09:00:00.000Z',
+        description: 'New scheduled date (ISO 8601)',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], DuplicateWorkOrderDto.prototype, "scheduledAt", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 'clx1234567890',
+        description: 'New technician ID',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DuplicateWorkOrderDto.prototype, "technicianId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['ACTIVE', 'COMPLETED', 'PAID'],
+        description: 'New status',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.WorkOrderStatus),
+    __metadata("design:type", String)
+], DuplicateWorkOrderDto.prototype, "status", void 0);
 class UpdateWorkOrderDto {
     scheduledAt;
     estimatedHours;
@@ -283,4 +329,112 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RequestAttachmentPresignedUrlDto.prototype, "description", void 0);
+class ListWorkOrdersQueryDto {
+    status;
+    technicianId;
+    clientId;
+    scheduledFrom;
+    scheduledTo;
+    workOrderNumber;
+    page;
+    limit;
+    sortBy;
+    sortOrder;
+}
+exports.ListWorkOrdersQueryDto = ListWorkOrdersQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['ACTIVE', 'COMPLETED', 'PAID'],
+        description: 'Filter by work order status',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.WorkOrderStatus),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'clx1234567890', description: 'Filter by technician ID' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "technicianId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'clx9876543210', description: 'Filter by client ID' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "clientId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: '2026-02-01T00:00:00.000Z',
+        description: 'Filter by scheduled date from (ISO 8601)',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "scheduledFrom", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: '2026-02-28T23:59:59.999Z',
+        description: 'Filter by scheduled date to (ISO 8601)',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "scheduledTo", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 'WO-2026-001',
+        description: 'Search by work order number',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "workOrderNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 1,
+        description: 'Page number (default: 1)',
+        minimum: 1,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], ListWorkOrdersQueryDto.prototype, "page", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 20,
+        description: 'Items per page (default: 20, max: 100)',
+        minimum: 1,
+        maximum: 100,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], ListWorkOrdersQueryDto.prototype, "limit", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+        example: 'scheduledAt',
+        description: 'Sort field',
+        default: 'scheduledAt',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber']),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "sortBy", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['asc', 'desc'],
+        example: 'asc',
+        description: 'Sort order',
+        default: 'asc',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(['asc', 'desc']),
+    __metadata("design:type", String)
+], ListWorkOrdersQueryDto.prototype, "sortOrder", void 0);
 //# sourceMappingURL=work-order.dto.js.map

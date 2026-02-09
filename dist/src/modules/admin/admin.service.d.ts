@@ -17,12 +17,12 @@ export declare class AdminService {
     }[]>;
     whitelistEmail(dto: WhitelistEmailDto): Promise<{
         id: string;
+        email: string;
+        username: string;
         createdAt: Date;
         updatedAt: Date;
         firstName: string;
         lastName: string;
-        email: string;
-        username: string;
         role: import(".prisma/client").$Enums.UserRole;
         whitelisted: boolean;
     }>;
@@ -31,12 +31,12 @@ export declare class AdminService {
         status: string;
         data: {
             id: string;
+            email: string;
+            username: string;
             createdAt: Date;
             updatedAt: Date;
             firstName: string;
             lastName: string;
-            email: string;
-            username: string;
             role: import(".prisma/client").$Enums.UserRole;
             whitelisted: boolean;
         };
@@ -49,14 +49,14 @@ export declare class AdminService {
     })[]>;
     createEmployee(dto: CreateEmployeeDto): Promise<{
         id: string;
+        email: string;
+        username: string;
         createdAt: Date;
         updatedAt: Date;
         firstName: string;
         lastName: string;
-        email: string;
         phone: string | null;
         address: string | null;
-        username: string;
         profileImageUrl: string | null;
         role: import(".prisma/client").$Enums.UserRole;
         whitelisted: boolean;

@@ -18,6 +18,9 @@ const swagger_1 = require("@nestjs/swagger");
 const work_orders_service_1 = require("./work-orders.service");
 const s3_service_1 = require("../common/services/s3.service");
 const jwt_auth_guard_1 = require("../modules/auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../modules/auth/guards/roles.guard");
+const roles_decorator_1 = require("../modules/auth/decorators/roles.decorator");
+const client_1 = require("@prisma/client");
 const work_order_dto_1 = require("../common/dto/work-order.dto");
 const auth_dto_1 = require("../common/dto/auth.dto");
 let WorkOrdersController = class WorkOrdersController {
@@ -26,6 +29,12 @@ let WorkOrdersController = class WorkOrdersController {
     constructor(workOrdersService, s3Service) {
         this.workOrdersService = workOrdersService;
         this.s3Service = s3Service;
+    }
+    async getAllWorkOrders(query) {
+        return this.workOrdersService.findAll(query);
+    }
+    getMyWorkOrders(req) {
+        return this.workOrdersService.findAllForTechnician(req.user.id);
     }
     getForTechnician(technicianId) {
         return this.workOrdersService.findAllForTechnician(technicianId);
@@ -56,10 +65,95 @@ let WorkOrdersController = class WorkOrdersController {
 };
 exports.WorkOrdersController = WorkOrdersController;
 __decorate([
+    (0, common_1.Get)(),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({
+        summary: 'List all work orders (Admin/Manager)',
+        description: 'Retrieve all work orders with optional filters, pagination, and sorting. Available to ADMIN and MANAGER roles only.',
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'status', required: false, enum: ['ACTIVE', 'COMPLETED', 'PAID'] }),
+    (0, swagger_1.ApiQuery)({ name: 'technicianId', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'clientId', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'scheduledFrom', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'scheduledTo', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'workOrderNumber', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, type: Number, example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, example: 20 }),
+    (0, swagger_1.ApiQuery)({
+        name: 'sortBy',
+        required: false,
+        enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Paginated list of work orders',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 200 },
+                data: {
+                    type: 'object',
+                    properties: {
+                        data: {
+                            type: 'array',
+                            items: { type: 'object' },
+                        },
+                        pagination: {
+                            type: 'object',
+                            properties: {
+                                page: { type: 'number', example: 1 },
+                                limit: { type: 'number', example: 20 },
+                                total: { type: 'number', example: 100 },
+                                totalPages: { type: 'number', example: 5 },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [work_order_dto_1.ListWorkOrdersQueryDto]),
+    __metadata("design:returntype", Promise)
+], WorkOrdersController.prototype, "getAllWorkOrders", null);
+__decorate([
+    (0, common_1.Get)('technician'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get my work orders',
+        description: 'Retrieve all work orders assigned to the authenticated technician. Active work orders are prioritized.',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'List of work orders',
+        schema: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    workOrderNumber: { type: 'string' },
+                    scheduledAt: { type: 'string', format: 'date-time' },
+                    status: { type: 'string', enum: ['ACTIVE', 'COMPLETED', 'PAID'] },
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], WorkOrdersController.prototype, "getMyWorkOrders", null);
+__decorate([
     (0, common_1.Get)('technician/:technicianId'),
     (0, swagger_1.ApiOperation)({
-        summary: 'Get work orders for a technician',
-        description: 'Retrieve all work orders assigned to a specific technician',
+        summary: 'Get work orders for a technician (Admin/Manager)',
+        description: 'Retrieve all work orders assigned to a specific technician. Requires admin or manager role.',
     }),
     (0, swagger_1.ApiParam)({
         name: 'technicianId',

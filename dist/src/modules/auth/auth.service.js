@@ -60,9 +60,17 @@ let AuthService = class AuthService {
     }
     async signUp(signUpDto) {
         const { password, email, username, ...rest } = signUpDto;
-        const whitelistedUser = await this.prisma.user.findUnique({
+        const whitelistedUser = (await this.prisma.user.findUnique({
             where: { email },
-        });
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                password: true,
+                whitelisted: true,
+                role: true,
+            },
+        }));
         if (!whitelistedUser || !whitelistedUser.whitelisted) {
             throw new common_1.UnauthorizedException('Email is not whitelisted. Please contact administrator.');
         }
@@ -77,7 +85,7 @@ let AuthService = class AuthService {
         }
         const saltRounds = parseInt(this.configService.get('BCRYPT_ROUNDS', '10'), 10);
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        const user = await this.prisma.user.update({
+        const user = (await this.prisma.user.update({
             where: { email },
             data: {
                 ...rest,
@@ -99,7 +107,7 @@ let AuthService = class AuthService {
                 createdAt: true,
                 updatedAt: true,
             },
-        });
+        }));
         const tokens = await this.generateTokens(user.id, user.role);
         return {
             user,
@@ -108,14 +116,52 @@ let AuthService = class AuthService {
     }
     async signIn(signInDto) {
         const { username, password } = signInDto;
-        const user = await this.prisma.user.findUnique({
+        let user = (await this.prisma.user.findUnique({
             where: { username },
-        });
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                password: true,
+                whitelisted: true,
+                role: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                address: true,
+                profileImageUrl: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        }));
+        if (!user) {
+            user = (await this.prisma.user.findUnique({
+                where: { email: username },
+                select: {
+                    id: true,
+                    email: true,
+                    username: true,
+                    password: true,
+                    whitelisted: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                    phone: true,
+                    address: true,
+                    profileImageUrl: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            }));
+        }
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         if (!user.whitelisted) {
             throw new common_1.UnauthorizedException('Your account is not authorized. Please contact administrator.');
+        }
+        if (!user.password) {
+            throw new common_1.UnauthorizedException('Account not set up. Please complete signup first.');
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
@@ -129,7 +175,7 @@ let AuthService = class AuthService {
         };
     }
     async updateProfileImage(userId, profileImageUrl) {
-        return this.prisma.user.update({
+        const result = await this.prisma.user.update({
             where: { id: userId },
             data: { profileImageUrl },
             select: {
@@ -146,6 +192,7 @@ let AuthService = class AuthService {
                 updatedAt: true,
             },
         });
+        return result;
     }
     async generateTokens(userId, role) {
         const payload = { sub: userId, role };
@@ -172,7 +219,7 @@ let AuthService = class AuthService {
         };
     }
     async validateUser(userId) {
-        const user = await this.prisma.user.findUnique({
+        const user = (await this.prisma.user.findUnique({
             where: { id: userId },
             select: {
                 id: true,
@@ -187,7 +234,7 @@ let AuthService = class AuthService {
                 createdAt: true,
                 updatedAt: true,
             },
-        });
+        }));
         return user;
     }
 };

@@ -6,7 +6,7 @@ export declare class CreateWorkOrderEquipmentDto {
     vendor?: string;
 }
 export declare class CreateWorkOrderDto {
-    workOrderNumber: string;
+    workOrderNumber?: string;
     scheduledAt: string;
     estimatedHours?: number;
     payRate?: number;
@@ -20,6 +20,11 @@ export declare class CreateWorkOrderDto {
     technicianId?: string;
     templateId?: string;
     equipment?: CreateWorkOrderEquipmentDto[];
+}
+export declare class DuplicateWorkOrderDto {
+    scheduledAt?: string;
+    technicianId?: string;
+    status?: WorkOrderStatus;
 }
 export declare class UpdateWorkOrderDto {
     scheduledAt?: string;
@@ -47,4 +52,16 @@ export declare class RequestAttachmentPresignedUrlDto {
     contentType: string;
     attachmentType: 'photo' | 'receipt';
     description?: string;
+}
+export declare class ListWorkOrdersQueryDto {
+    status?: WorkOrderStatus;
+    technicianId?: string;
+    clientId?: string;
+    scheduledFrom?: string;
+    scheduledTo?: string;
+    workOrderNumber?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: 'scheduledAt' | 'createdAt' | 'updatedAt' | 'workOrderNumber';
+    sortOrder?: 'asc' | 'desc';
 }

@@ -5,6 +5,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   UseGuards,
   Request,
   HttpCode,
@@ -15,14 +16,19 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { WorkOrdersService } from './work-orders.service';
 import { S3Service } from '../common/services/s3.service';
 import { JwtAuthGuard } from '../modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../modules/auth/guards/roles.guard';
+import { Roles } from '../modules/auth/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 import {
   RequestAttachmentPresignedUrlDto,
   CreateAttachmentDto,
+  ListWorkOrdersQueryDto,
 } from '../common/dto/work-order.dto';
 import { PresignedUrlResponseDto } from '../common/dto/auth.dto';
 import { AuthenticatedRequest } from '../common/interfaces/request.interface';
@@ -37,10 +43,92 @@ export class WorkOrdersController {
     private readonly s3Service: S3Service,
   ) {}
 
+  @Get()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({
+    summary: 'List all work orders (Admin/Manager)',
+    description:
+      'Retrieve all work orders with optional filters, pagination, and sorting. Available to ADMIN and MANAGER roles only.',
+  })
+  @ApiQuery({ name: 'status', required: false, enum: ['ACTIVE', 'COMPLETED', 'PAID'] })
+  @ApiQuery({ name: 'technicianId', required: false, type: String })
+  @ApiQuery({ name: 'clientId', required: false, type: String })
+  @ApiQuery({ name: 'scheduledFrom', required: false, type: String })
+  @ApiQuery({ name: 'scheduledTo', required: false, type: String })
+  @ApiQuery({ name: 'workOrderNumber', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of work orders',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: { type: 'object' },
+            },
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'number', example: 1 },
+                limit: { type: 'number', example: 20 },
+                total: { type: 'number', example: 100 },
+                totalPages: { type: 'number', example: 5 },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
+  async getAllWorkOrders(@Query() query: ListWorkOrdersQueryDto) {
+    return this.workOrdersService.findAll(query);
+  }
+
+  @Get('technician')
+  @ApiOperation({
+    summary: 'Get my work orders',
+    description: 'Retrieve all work orders assigned to the authenticated technician. Active work orders are prioritized.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of work orders',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          workOrderNumber: { type: 'string' },
+          scheduledAt: { type: 'string', format: 'date-time' },
+          status: { type: 'string', enum: ['ACTIVE', 'COMPLETED', 'PAID'] },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getMyWorkOrders(@Request() req: AuthenticatedRequest) {
+    return this.workOrdersService.findAllForTechnician(req.user.id);
+  }
+
   @Get('technician/:technicianId')
   @ApiOperation({
-    summary: 'Get work orders for a technician',
-    description: 'Retrieve all work orders assigned to a specific technician',
+    summary: 'Get work orders for a technician (Admin/Manager)',
+    description: 'Retrieve all work orders assigned to a specific technician. Requires admin or manager role.',
   })
   @ApiParam({
     name: 'technicianId',

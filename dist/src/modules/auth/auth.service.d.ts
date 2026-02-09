@@ -2,6 +2,22 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignUpDto, SignInDto } from '../../common/dto/auth.dto';
+import { UserRole } from '@prisma/client';
+type UserSelectResult = {
+    id: string;
+    email: string;
+    username: string;
+    password?: string | null;
+    whitelisted?: boolean;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    address: string | null;
+    profileImageUrl?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+};
 export declare class AuthService {
     private prisma;
     private jwtService;
@@ -10,63 +26,28 @@ export declare class AuthService {
     signUp(signUpDto: SignUpDto): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            firstName: string;
-            lastName: string;
-            email: string;
-            phone: string | null;
-            address: string | null;
-            username: string;
-            profileImageUrl: string | null;
-            role: import(".prisma/client").$Enums.UserRole;
-        };
+        user: UserSelectResult;
     }>;
     signIn(signInDto: SignInDto): Promise<{
         accessToken: string;
         refreshToken: string;
         user: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string;
+            username: string;
+            whitelisted?: boolean;
+            role: UserRole;
             firstName: string;
             lastName: string;
-            email: string;
             phone: string | null;
             address: string | null;
-            username: string;
-            profileImageUrl: string | null;
-            role: import(".prisma/client").$Enums.UserRole;
-            whitelisted: boolean;
+            profileImageUrl?: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     }>;
-    updateProfileImage(userId: string, profileImageUrl: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        firstName: string;
-        lastName: string;
-        email: string;
-        phone: string | null;
-        address: string | null;
-        username: string;
-        profileImageUrl: string | null;
-        role: import(".prisma/client").$Enums.UserRole;
-    }>;
+    updateProfileImage(userId: string, profileImageUrl: string): Promise<UserSelectResult>;
     private generateTokens;
-    validateUser(userId: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        firstName: string;
-        lastName: string;
-        email: string;
-        phone: string | null;
-        address: string | null;
-        username: string;
-        profileImageUrl: string | null;
-        role: import(".prisma/client").$Enums.UserRole;
-    } | null>;
+    validateUser(userId: string): Promise<UserSelectResult | null>;
 }
+export {};

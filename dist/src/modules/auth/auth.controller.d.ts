@@ -12,16 +12,18 @@ export declare class AuthController {
         refreshToken: string;
         user: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string;
+            username: string;
+            password?: string | null;
+            whitelisted?: boolean;
+            role: import(".prisma/client").UserRole;
             firstName: string;
             lastName: string;
-            email: string;
             phone: string | null;
             address: string | null;
-            username: string;
-            profileImageUrl: string | null;
-            role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl?: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     }>;
     signIn(signInDto: SignInDto): Promise<{
@@ -29,32 +31,34 @@ export declare class AuthController {
         refreshToken: string;
         user: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            email: string;
+            username: string;
+            whitelisted?: boolean;
+            role: import(".prisma/client").UserRole;
             firstName: string;
             lastName: string;
-            email: string;
             phone: string | null;
             address: string | null;
-            username: string;
-            profileImageUrl: string | null;
-            role: import(".prisma/client").$Enums.UserRole;
-            whitelisted: boolean;
+            profileImageUrl?: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     }>;
     getPresignedUrl(dto: RequestPresignedUrlDto): Promise<PresignedUrlResponseDto>;
     getProfilePresignedUrl(req: AuthenticatedRequest, dto: ProfilePresignedUrlRequestDto): Promise<PresignedUrlResponseDto>;
     updateProfileImage(req: AuthenticatedRequest, dto: ProfileImageUrlDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        email: string;
+        username: string;
+        password?: string | null;
+        whitelisted?: boolean;
+        role: import(".prisma/client").UserRole;
         firstName: string;
         lastName: string;
-        email: string;
         phone: string | null;
         address: string | null;
-        username: string;
-        profileImageUrl: string | null;
-        role: import(".prisma/client").$Enums.UserRole;
+        profileImageUrl?: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

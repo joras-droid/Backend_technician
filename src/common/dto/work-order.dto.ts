@@ -35,9 +35,18 @@ export class CreateWorkOrderEquipmentDto {
 }
 
 export class CreateWorkOrderDto {
+  @ApiPropertyOptional({
+    example: 'WO-2026-001',
+    description: 'Work order number (auto-generated if not provided)',
+  })
+  @IsOptional()
   @IsString()
-  workOrderNumber: string;
+  workOrderNumber?: string;
 
+  @ApiProperty({
+    example: '2026-02-10T09:00:00.000Z',
+    description: 'Scheduled date and time (ISO 8601)',
+  })
   @IsDateString()
   scheduledAt: string;
 
@@ -85,11 +94,41 @@ export class CreateWorkOrderDto {
   @IsString()
   templateId?: string;
 
+  @ApiPropertyOptional({
+    type: [CreateWorkOrderEquipmentDto],
+    description: 'Equipment list',
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateWorkOrderEquipmentDto)
   equipment?: CreateWorkOrderEquipmentDto[];
+}
+
+export class DuplicateWorkOrderDto {
+  @ApiPropertyOptional({
+    example: '2026-02-15T09:00:00.000Z',
+    description: 'New scheduled date (ISO 8601)',
+  })
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
+
+  @ApiPropertyOptional({
+    example: 'clx1234567890',
+    description: 'New technician ID',
+  })
+  @IsOptional()
+  @IsString()
+  technicianId?: string;
+
+  @ApiPropertyOptional({
+    enum: ['ACTIVE', 'COMPLETED', 'PAID'],
+    description: 'New status',
+  })
+  @IsOptional()
+  @IsEnum(WorkOrderStatus)
+  status?: WorkOrderStatus;
 }
 
 export class UpdateWorkOrderDto {
@@ -196,4 +235,91 @@ export class RequestAttachmentPresignedUrlDto {
   @IsOptional()
   @IsString()
   description?: string;
+}
+
+export class ListWorkOrdersQueryDto {
+  @ApiPropertyOptional({
+    enum: ['ACTIVE', 'COMPLETED', 'PAID'],
+    description: 'Filter by work order status',
+  })
+  @IsOptional()
+  @IsEnum(WorkOrderStatus)
+  status?: WorkOrderStatus;
+
+  @ApiPropertyOptional({ example: 'clx1234567890', description: 'Filter by technician ID' })
+  @IsOptional()
+  @IsString()
+  technicianId?: string;
+
+  @ApiPropertyOptional({ example: 'clx9876543210', description: 'Filter by client ID' })
+  @IsOptional()
+  @IsString()
+  clientId?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-02-01T00:00:00.000Z',
+    description: 'Filter by scheduled date from (ISO 8601)',
+  })
+  @IsOptional()
+  @IsDateString()
+  scheduledFrom?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-02-28T23:59:59.999Z',
+    description: 'Filter by scheduled date to (ISO 8601)',
+  })
+  @IsOptional()
+  @IsDateString()
+  scheduledTo?: string;
+
+  @ApiPropertyOptional({
+    example: 'WO-2026-001',
+    description: 'Search by work order number',
+  })
+  @IsOptional()
+  @IsString()
+  workOrderNumber?: string;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Page number (default: 1)',
+    minimum: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'Items per page (default: 20, max: 100)',
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit?: number;
+
+  @ApiPropertyOptional({
+    enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+    example: 'scheduledAt',
+    description: 'Sort field',
+    default: 'scheduledAt',
+  })
+  @IsOptional()
+  @IsEnum(['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'])
+  sortBy?: 'scheduledAt' | 'createdAt' | 'updatedAt' | 'workOrderNumber';
+
+  @ApiPropertyOptional({
+    enum: ['asc', 'desc'],
+    example: 'asc',
+    description: 'Sort order',
+    default: 'asc',
+  })
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
 }

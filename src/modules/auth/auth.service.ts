@@ -11,6 +11,23 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SignUpDto, SignInDto } from '../../common/dto/auth.dto';
 import { UserRole } from '@prisma/client';
 
+// Type for user selection that includes whitelisted and profileImageUrl
+type UserSelectResult = {
+  id: string;
+  email: string;
+  username: string;
+  password?: string | null;
+  whitelisted?: boolean;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  address: string | null;
+  profileImageUrl?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -23,9 +40,17 @@ export class AuthService {
     const { password, email, username, ...rest } = signUpDto;
 
     // Check if email is whitelisted
-    const whitelistedUser = await this.prisma.user.findUnique({
+    const whitelistedUser = (await this.prisma.user.findUnique({
       where: { email },
-    });
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        password: true,
+        whitelisted: true,
+        role: true,
+      } as any, // Type assertion needed due to Prisma type generation issue
+    })) as UserSelectResult | null;
 
     if (!whitelistedUser || !whitelistedUser.whitelisted) {
       throw new UnauthorizedException('Email is not whitelisted. Please contact administrator.');
@@ -53,15 +78,15 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Update whitelisted user with password and other details
-    const user = await this.prisma.user.update({
+    const user = (await this.prisma.user.update({
       where: { email },
       data: {
         ...rest,
         username,
         password: hashedPassword,
-        role: rest.role || whitelistedUser.role || UserRole.TECHNICIAN,
+        role: rest.role || whitelistedUser!.role || UserRole.TECHNICIAN,
         whitelisted: true, // Ensure it stays whitelisted
-      },
+      } as any, // Type assertion needed due to Prisma type generation issue
       select: {
         id: true,
         firstName: true,
@@ -74,8 +99,8 @@ export class AuthService {
         role: true,
         createdAt: true,
         updatedAt: true,
-      },
-    });
+      } as any, // Type assertion needed due to Prisma type generation issue
+    })) as unknown as UserSelectResult;
 
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.role);
@@ -89,10 +114,47 @@ export class AuthService {
   async signIn(signInDto: SignInDto) {
     const { username, password } = signInDto;
 
-    // Find user
-    const user = await this.prisma.user.findUnique({
+    // Try to find user by username or email
+    let user = (await this.prisma.user.findUnique({
       where: { username },
-    });
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        password: true,
+        whitelisted: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        profileImageUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      } as any, // Type assertion needed due to Prisma type generation issue
+    })) as UserSelectResult | null;
+
+    // If not found by username, try email
+    if (!user) {
+      user = (await this.prisma.user.findUnique({
+        where: { email: username }, // username field might contain email
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          password: true,
+          whitelisted: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          address: true,
+          profileImageUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        } as any, // Type assertion needed due to Prisma type generation issue
+      })) as UserSelectResult | null;
+    }
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -101,6 +163,11 @@ export class AuthService {
     // Check if email is whitelisted
     if (!user.whitelisted) {
       throw new UnauthorizedException('Your account is not authorized. Please contact administrator.');
+    }
+
+    // Check if user has a password (account must be set up via signup)
+    if (!user.password) {
+      throw new UnauthorizedException('Account not set up. Please complete signup first.');
     }
 
     // Verify password
@@ -121,10 +188,10 @@ export class AuthService {
     };
   }
 
-  async updateProfileImage(userId: string, profileImageUrl: string) {
-    return this.prisma.user.update({
+  async updateProfileImage(userId: string, profileImageUrl: string): Promise<UserSelectResult> {
+    const result = await this.prisma.user.update({
       where: { id: userId },
-      data: { profileImageUrl },
+      data: { profileImageUrl } as any, // Type assertion needed due to Prisma type generation issue
       select: {
         id: true,
         firstName: true,
@@ -137,8 +204,9 @@ export class AuthService {
         role: true,
         createdAt: true,
         updatedAt: true,
-      },
+      } as any, // Type assertion needed due to Prisma type generation issue
     });
+    return result as unknown as UserSelectResult;
   }
 
   private async generateTokens(userId: string, role: UserRole) {
@@ -174,7 +242,7 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = (await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -188,8 +256,8 @@ export class AuthService {
         role: true,
         createdAt: true,
         updatedAt: true,
-      },
-    });
+      } as any, // Type assertion needed due to Prisma type generation issue
+    })) as UserSelectResult | null;
 
     return user;
   }

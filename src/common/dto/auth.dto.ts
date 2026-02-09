@@ -104,11 +104,11 @@ export class SignUpDto {
 
 export class SignInDto {
   @ApiProperty({
-    description: 'Username',
+    description: 'Username or email address',
     example: 'johndoe',
   })
   @IsString()
-  username: string;
+  username: string; // Can be username or email
 
   @ApiProperty({
     description: 'Password',
