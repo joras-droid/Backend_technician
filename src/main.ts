@@ -96,8 +96,8 @@ async function bootstrap() {
       .addTag('clients', 'Client management endpoints')
       .addTag('work-orders', 'Work order management endpoints')
       .addTag('admin', 'Admin management endpoints')
-      .addServer(`http://localhost:${port}`, 'Local development')
-      .addServer(`http://${networkIP}:${port}`, 'Network access')
+      .addServer(`https://technician.nirajan.dev`, 'Local development')
+      // .addServer(`http://${networkIP}:${port}`, 'Network access')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
