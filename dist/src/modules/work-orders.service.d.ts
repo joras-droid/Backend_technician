@@ -7,64 +7,87 @@ export declare class WorkOrdersService {
         data: ({
             client: {
                 id: string;
-                name: string;
                 email: string | null;
                 phone: string | null;
-            } | null;
-            technician: {
-                id: string;
-                email: string;
-                phone: string | null;
-                firstName: string;
-                lastName: string;
-                profileImageUrl: string | null;
+                name: string;
             } | null;
             equipment: {
+                id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                id: string;
                 name: string;
-                workOrderId: string;
                 quantity: number;
                 cost: number;
                 vendor: string | null;
+                equipmentId: string | null;
+                workOrderId: string;
                 receiptUrl: string | null;
                 isCustom: boolean;
-                addedByTechnicianId: string | null;
                 approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
-                approvedById: string | null;
                 approvedAt: Date | null;
                 rejectionReason: string | null;
-                equipmentId: string | null;
+                addedByTechnicianId: string | null;
+                approvedById: string | null;
             }[];
-            attachments: {
-                createdAt: Date;
+            technician: {
                 id: string;
+                email: string;
+                username: string;
+                createdAt: Date;
+                updatedAt: Date;
+                firstName: string;
+                lastName: string;
+                phone: string | null;
+                address: string | null;
+                password: string;
+                profileImageUrl: string | null;
+                role: import(".prisma/client").$Enums.UserRole;
+                whitelisted: boolean;
+                defaultPayRate: number | null;
+            } | {
+                id: string;
+                email: string;
+                username: string;
+                createdAt: Date;
+                updatedAt: Date;
+                firstName: string;
+                lastName: string;
+                phone: string | null;
+                address: string | null;
+                password: string;
+                profileImageUrl: string | null;
+                role: import(".prisma/client").$Enums.UserRole;
+                whitelisted: boolean;
+                defaultPayRate: number | null;
+            } | null;
+            attachments: {
+                id: string;
+                createdAt: Date;
+                description: string | null;
+                type: string | null;
                 workOrderId: string;
                 url: string;
-                type: string | null;
-                description: string | null;
             }[];
         } & {
-            scheduledAt: Date;
+            id: string;
             createdAt: Date;
             updatedAt: Date;
+            notes: string | null;
             workOrderNumber: string;
-            id: string;
+            scheduledAt: Date;
             estimatedHours: number | null;
             payRate: number | null;
             facilityName: string;
             facilityAddress: string;
             pointOfContact: string | null;
             tasks: string | null;
-            notes: string | null;
             status: import(".prisma/client").$Enums.WorkOrderStatus;
-            invoiceNumber: string | null;
-            beforeWorkPhotos: string[];
-            afterWorkPhotos: string[];
             clientId: string | null;
             technicianId: string | null;
             templateId: string | null;
+            invoiceNumber: string | null;
+            beforeWorkPhotos: string[];
+            afterWorkPhotos: string[];
         })[];
         pagination: {
             page: number;
@@ -75,114 +98,70 @@ export declare class WorkOrdersService {
     }>;
     findAllForTechnician(technicianId: string): import(".prisma/client").Prisma.PrismaPromise<({
         client: {
+            id: string;
+            email: string | null;
             createdAt: Date;
             updatedAt: Date;
-            id: string;
-            notes: string | null;
-            name: string;
-            email: string | null;
             phone: string | null;
             address: string | null;
-        } | null;
-        technician: {
-            id: string;
-            email: string;
-            phone: string | null;
-            firstName: string;
-            lastName: string;
+            name: string;
+            notes: string | null;
         } | null;
         equipment: {
+            id: string;
             createdAt: Date;
             updatedAt: Date;
-            id: string;
             name: string;
-            workOrderId: string;
             quantity: number;
             cost: number;
             vendor: string | null;
+            equipmentId: string | null;
+            workOrderId: string;
             receiptUrl: string | null;
             isCustom: boolean;
-            addedByTechnicianId: string | null;
             approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
-            approvedById: string | null;
             approvedAt: Date | null;
             rejectionReason: string | null;
-            equipmentId: string | null;
+            addedByTechnicianId: string | null;
+            approvedById: string | null;
         }[];
-        attachments: {
-            createdAt: Date;
+        technician: {
             id: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+        } | null;
+        attachments: {
+            id: string;
+            createdAt: Date;
+            description: string | null;
+            type: string | null;
             workOrderId: string;
             url: string;
-            type: string | null;
-            description: string | null;
         }[];
     } & {
-        scheduledAt: Date;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         workOrderNumber: string;
-        id: string;
+        scheduledAt: Date;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
-        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
-        invoiceNumber: string | null;
-        beforeWorkPhotos: string[];
-        afterWorkPhotos: string[];
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        invoiceNumber: string | null;
+        beforeWorkPhotos: string[];
+        afterWorkPhotos: string[];
     })[]>;
     findOne(id: string): import(".prisma/client").Prisma.Prisma__WorkOrderClient<({
-        client: {
-            createdAt: Date;
-            updatedAt: Date;
-            id: string;
-            notes: string | null;
-            name: string;
-            email: string | null;
-            phone: string | null;
-            address: string | null;
-        } | null;
-        technician: {
-            id: string;
-            email: string;
-            phone: string | null;
-            firstName: string;
-            lastName: string;
-            profileImageUrl: string | null;
-        } | null;
-        equipment: {
-            createdAt: Date;
-            updatedAt: Date;
-            id: string;
-            name: string;
-            workOrderId: string;
-            quantity: number;
-            cost: number;
-            vendor: string | null;
-            receiptUrl: string | null;
-            isCustom: boolean;
-            addedByTechnicianId: string | null;
-            approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
-            approvedById: string | null;
-            approvedAt: Date | null;
-            rejectionReason: string | null;
-            equipmentId: string | null;
-        }[];
-        attachments: {
-            createdAt: Date;
-            id: string;
-            workOrderId: string;
-            url: string;
-            type: string | null;
-            description: string | null;
-        }[];
         timeEntries: ({
             technician: {
                 id: string;
@@ -190,9 +169,9 @@ export declare class WorkOrdersService {
                 lastName: string;
             };
         } & {
+            id: string;
             createdAt: Date;
             updatedAt: Date;
-            id: string;
             technicianId: string;
             workOrderId: string;
             checkInAt: Date | null;
@@ -202,130 +181,180 @@ export declare class WorkOrdersService {
             checkOutLat: number | null;
             checkOutLng: number | null;
         })[];
+        client: {
+            id: string;
+            email: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            phone: string | null;
+            address: string | null;
+            name: string;
+            notes: string | null;
+        } | null;
+        equipment: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            quantity: number;
+            cost: number;
+            vendor: string | null;
+            equipmentId: string | null;
+            workOrderId: string;
+            receiptUrl: string | null;
+            isCustom: boolean;
+            approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
+            approvedAt: Date | null;
+            rejectionReason: string | null;
+            addedByTechnicianId: string | null;
+            approvedById: string | null;
+        }[];
+        technician: {
+            id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | {
+            id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | null;
+        attachments: {
+            id: string;
+            createdAt: Date;
+            description: string | null;
+            type: string | null;
+            workOrderId: string;
+            url: string;
+        }[];
     } & {
-        scheduledAt: Date;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         workOrderNumber: string;
-        id: string;
+        scheduledAt: Date;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
-        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
-        invoiceNumber: string | null;
-        beforeWorkPhotos: string[];
-        afterWorkPhotos: string[];
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        invoiceNumber: string | null;
+        beforeWorkPhotos: string[];
+        afterWorkPhotos: string[];
     }) | null, null, import("@prisma/client/runtime/library").DefaultArgs, import(".prisma/client").Prisma.PrismaClientOptions>;
     create(dto: CreateWorkOrderDto, userId: string): Promise<{
         client: {
             id: string;
-            name: string;
             email: string | null;
             phone: string | null;
-        } | null;
-        technician: {
-            id: string;
-            email: string;
-            phone: string | null;
-            firstName: string;
-            lastName: string;
-            profileImageUrl: string | null;
+            name: string;
         } | null;
         equipment: {
+            id: string;
             createdAt: Date;
             updatedAt: Date;
-            id: string;
             name: string;
-            workOrderId: string;
             quantity: number;
             cost: number;
             vendor: string | null;
+            equipmentId: string | null;
+            workOrderId: string;
             receiptUrl: string | null;
             isCustom: boolean;
-            addedByTechnicianId: string | null;
             approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
-            approvedById: string | null;
             approvedAt: Date | null;
             rejectionReason: string | null;
-            equipmentId: string | null;
+            addedByTechnicianId: string | null;
+            approvedById: string | null;
         }[];
-        attachments: {
-            createdAt: Date;
+        technician: {
             id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | {
+            id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | null;
+        attachments: {
+            id: string;
+            createdAt: Date;
+            description: string | null;
+            type: string | null;
             workOrderId: string;
             url: string;
-            type: string | null;
-            description: string | null;
         }[];
     } & {
-        scheduledAt: Date;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         workOrderNumber: string;
-        id: string;
+        scheduledAt: Date;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
-        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
-        invoiceNumber: string | null;
-        beforeWorkPhotos: string[];
-        afterWorkPhotos: string[];
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        invoiceNumber: string | null;
+        beforeWorkPhotos: string[];
+        afterWorkPhotos: string[];
     }>;
     update(id: string, dto: UpdateWorkOrderDto, userId: string, userRole?: string): Promise<{
-        client: {
-            id: string;
-            name: string;
-            email: string | null;
-            phone: string | null;
-        } | null;
-        technician: {
-            id: string;
-            email: string;
-            phone: string | null;
-            firstName: string;
-            lastName: string;
-            profileImageUrl: string | null;
-        } | null;
-        equipment: {
-            createdAt: Date;
-            updatedAt: Date;
-            id: string;
-            name: string;
-            workOrderId: string;
-            quantity: number;
-            cost: number;
-            vendor: string | null;
-            receiptUrl: string | null;
-            isCustom: boolean;
-            addedByTechnicianId: string | null;
-            approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
-            approvedById: string | null;
-            approvedAt: Date | null;
-            rejectionReason: string | null;
-            equipmentId: string | null;
-        }[];
-        attachments: {
-            createdAt: Date;
-            id: string;
-            workOrderId: string;
-            url: string;
-            type: string | null;
-            description: string | null;
-        }[];
         timeEntries: ({
             technician: {
                 id: string;
@@ -333,9 +362,9 @@ export declare class WorkOrdersService {
                 lastName: string;
             };
         } & {
+            id: string;
             createdAt: Date;
             updatedAt: Date;
-            id: string;
             technicianId: string;
             workOrderId: string;
             checkInAt: Date | null;
@@ -345,26 +374,89 @@ export declare class WorkOrdersService {
             checkOutLat: number | null;
             checkOutLng: number | null;
         })[];
+        client: {
+            id: string;
+            email: string | null;
+            phone: string | null;
+            name: string;
+        } | null;
+        equipment: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            quantity: number;
+            cost: number;
+            vendor: string | null;
+            equipmentId: string | null;
+            workOrderId: string;
+            receiptUrl: string | null;
+            isCustom: boolean;
+            approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
+            approvedAt: Date | null;
+            rejectionReason: string | null;
+            addedByTechnicianId: string | null;
+            approvedById: string | null;
+        }[];
+        technician: {
+            id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | {
+            id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | null;
+        attachments: {
+            id: string;
+            createdAt: Date;
+            description: string | null;
+            type: string | null;
+            workOrderId: string;
+            url: string;
+        }[];
     } & {
-        scheduledAt: Date;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         workOrderNumber: string;
-        id: string;
+        scheduledAt: Date;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
-        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
-        invoiceNumber: string | null;
-        beforeWorkPhotos: string[];
-        afterWorkPhotos: string[];
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        invoiceNumber: string | null;
+        beforeWorkPhotos: string[];
+        afterWorkPhotos: string[];
     }>;
     delete(id: string, userId: string): Promise<{
         message: string;
@@ -373,71 +465,94 @@ export declare class WorkOrdersService {
     duplicate(id: string, dto: DuplicateWorkOrderDto, userId: string): Promise<{
         client: {
             id: string;
-            name: string;
             email: string | null;
             phone: string | null;
-        } | null;
-        technician: {
-            id: string;
-            email: string;
-            phone: string | null;
-            firstName: string;
-            lastName: string;
-            profileImageUrl: string | null;
+            name: string;
         } | null;
         equipment: {
+            id: string;
             createdAt: Date;
             updatedAt: Date;
-            id: string;
             name: string;
-            workOrderId: string;
             quantity: number;
             cost: number;
             vendor: string | null;
+            equipmentId: string | null;
+            workOrderId: string;
             receiptUrl: string | null;
             isCustom: boolean;
-            addedByTechnicianId: string | null;
             approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
-            approvedById: string | null;
             approvedAt: Date | null;
             rejectionReason: string | null;
-            equipmentId: string | null;
+            addedByTechnicianId: string | null;
+            approvedById: string | null;
         }[];
-        attachments: {
-            createdAt: Date;
+        technician: {
             id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | {
+            id: string;
+            email: string;
+            username: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            address: string | null;
+            password: string;
+            profileImageUrl: string | null;
+            role: import(".prisma/client").$Enums.UserRole;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | null;
+        attachments: {
+            id: string;
+            createdAt: Date;
+            description: string | null;
+            type: string | null;
             workOrderId: string;
             url: string;
-            type: string | null;
-            description: string | null;
         }[];
     } & {
-        scheduledAt: Date;
+        id: string;
         createdAt: Date;
         updatedAt: Date;
+        notes: string | null;
         workOrderNumber: string;
-        id: string;
+        scheduledAt: Date;
         estimatedHours: number | null;
         payRate: number | null;
         facilityName: string;
         facilityAddress: string;
         pointOfContact: string | null;
         tasks: string | null;
-        notes: string | null;
         status: import(".prisma/client").$Enums.WorkOrderStatus;
-        invoiceNumber: string | null;
-        beforeWorkPhotos: string[];
-        afterWorkPhotos: string[];
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        invoiceNumber: string | null;
+        beforeWorkPhotos: string[];
+        afterWorkPhotos: string[];
     }>;
     createAttachment(workOrderId: string, dto: CreateAttachmentDto, userId: string): Promise<{
-        createdAt: Date;
         id: string;
+        createdAt: Date;
+        description: string | null;
+        type: string | null;
         workOrderId: string;
         url: string;
-        type: string | null;
-        description: string | null;
     }>;
 }

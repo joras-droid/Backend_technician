@@ -215,7 +215,7 @@ let WorkOrdersService = class WorkOrdersService {
                             vendor: eq.vendor,
                             equipmentId: eq.equipmentId,
                             isCustom: false,
-                            approvalStatus: client_1.EquipmentApprovalStatus.APPROVED,
+                            approvalStatus: 'APPROVED',
                         })),
                     }
                     : undefined,
@@ -385,11 +385,7 @@ let WorkOrdersService = class WorkOrdersService {
         const original = await this.prisma.workOrder.findUnique({
             where: { id },
             include: {
-                equipment: {
-                    include: {
-                        equipment: true,
-                    },
-                },
+                equipment: true,
             },
         });
         if (!original) {
