@@ -1,8 +1,8 @@
 module.exports = {
     apps: [
       {
-        name: "Backend_Technician",
-        cwd: "/home/ubuntu/Backend_Technician",
+        name: "Backend_technician",
+        cwd: "/home/ubuntu/Backend_technician",
         script: "dist/src/main.js",
         instances: 1,            // 1 instance for now
         exec_mode: "fork",       // fork mode for single instance
