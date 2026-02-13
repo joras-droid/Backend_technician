@@ -115,9 +115,10 @@ export class AdminController {
 
   @Post('employees')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({
     summary: 'Create employee account',
-    description: 'Create an employee account directly with email, name, and password',
+    description: 'Create an employee account directly with email, name, and password. Admin and Manager can create employees.',
   })
   @ApiResponse({
     status: 201,

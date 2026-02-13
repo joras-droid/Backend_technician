@@ -9,24 +9,24 @@ export declare class EquipmentController {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }[]>;
     search(query: SearchEquipmentQueryDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }[]>;
     getPendingApprovals(): Promise<({
         workOrder: {
@@ -36,20 +36,20 @@ export declare class EquipmentController {
         };
         addedByTechnician: {
             id: string;
-            email: string;
             firstName: string;
             lastName: string;
+            email: string;
         } | null;
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -63,36 +63,36 @@ export declare class EquipmentController {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }>;
     create(dto: CreateEquipmentDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }>;
     update(id: string, dto: UpdateEquipmentDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }>;
     delete(id: string): Promise<{
         message: string;
@@ -114,11 +114,11 @@ export declare class EquipmentController {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -143,11 +143,11 @@ export declare class EquipmentController {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -174,11 +174,11 @@ export declare class WorkOrderEquipmentController {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -201,11 +201,11 @@ export declare class WorkOrderEquipmentController {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;

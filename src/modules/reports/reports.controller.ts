@@ -70,6 +70,48 @@ export class ReportsController {
     return this.reportsService.getTimeSummary(query);
   }
 
+  @Get('metrics')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Dashboard metrics (Admin/Manager)',
+    description: 'Get dashboard metrics with optional duration filter (weekly, monthly, etc.)',
+  })
+  @ApiQuery({
+    name: 'duration',
+    required: false,
+    enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+    description: 'Time period for metrics aggregation',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard metrics with stat cards, charts, and KPIs',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
+  async getMetrics(@Query('duration') duration?: string) {
+    const validDurations = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+    const d = validDurations.includes(duration || '') ? duration : 'weekly';
+    return this.reportsService.getDashboardMetrics(d as any);
+  }
+
+  @Get('recent-activity')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Recent activities (Admin/Manager)',
+    description: 'Get recent activities of technicians and managers - work orders, employees, equipment, time entries',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max items to return (default 20)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Recent activity feed',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
+  async getRecentActivity(@Query('limit') limit?: string) {
+    const l = limit ? parseInt(limit, 10) : 20;
+    return this.reportsService.getRecentActivities(isNaN(l) ? 20 : l);
+  }
+
   @Get('export')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

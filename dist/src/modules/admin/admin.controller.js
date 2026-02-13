@@ -128,9 +128,10 @@ __decorate([
 __decorate([
     (0, common_1.Post)('employees'),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER),
     (0, swagger_1.ApiOperation)({
         summary: 'Create employee account',
-        description: 'Create an employee account directly with email, name, and password',
+        description: 'Create an employee account directly with email, name, and password. Admin and Manager can create employees.',
     }),
     (0, swagger_1.ApiResponse)({
         status: 201,

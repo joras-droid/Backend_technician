@@ -5,9 +5,9 @@ export declare class ClientsController {
     constructor(clientsService: ClientsService);
     getAll(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
         phone: string | null;
         address: string | null;
         name: string;
@@ -19,9 +19,9 @@ export declare class ClientsController {
             workOrders: number;
         };
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
         phone: string | null;
         address: string | null;
         name: string;
@@ -29,9 +29,9 @@ export declare class ClientsController {
     }>;
     create(dto: CreateClientDto): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
         phone: string | null;
         address: string | null;
         name: string;
@@ -39,9 +39,9 @@ export declare class ClientsController {
     }>;
     update(id: string, dto: UpdateClientDto): Promise<{
         id: string;
-        email: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
         phone: string | null;
         address: string | null;
         name: string;

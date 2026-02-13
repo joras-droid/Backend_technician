@@ -8,48 +8,48 @@ export declare class EquipmentService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }>;
     findAll(): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }>;
     update(id: string, dto: UpdateEquipmentDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }>;
     delete(id: string): Promise<{
         message: string;
@@ -60,12 +60,12 @@ export declare class EquipmentService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         vendor: string | null;
+        description: string | null;
+        isActive: boolean;
         price: number;
         minRange: number | null;
         maxRange: number | null;
-        isActive: boolean;
     }[]>;
     addCatalogEquipment(workOrderId: string, dto: AddCatalogEquipmentDto, technicianId: string): Promise<{
         workOrder: {
@@ -81,11 +81,11 @@ export declare class EquipmentService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -108,11 +108,11 @@ export declare class EquipmentService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -137,11 +137,11 @@ export declare class EquipmentService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -166,11 +166,11 @@ export declare class EquipmentService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
@@ -187,20 +187,20 @@ export declare class EquipmentService {
         };
         addedByTechnician: {
             id: string;
-            email: string;
             firstName: string;
             lastName: string;
+            email: string;
         } | null;
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        workOrderId: string;
         quantity: number;
         cost: number;
         vendor: string | null;
         equipmentId: string | null;
-        workOrderId: string;
         receiptUrl: string | null;
         isCustom: boolean;
         approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;

@@ -173,7 +173,8 @@ export class AdminService {
    * Create employee account directly (with password)
    */
   async createEmployee(dto: CreateEmployeeDto) {
-    const { password, email, ...rest } = dto;
+    const { password, email, payRate, defaultPayRate, ...rest } = dto;
+    const effectivePayRate = defaultPayRate ?? payRate;
 
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
@@ -197,7 +198,7 @@ export class AdminService {
           ...rest,
           password: hashedPassword,
           whitelisted: true,
-          defaultPayRate: rest.defaultPayRate,
+          defaultPayRate: effectivePayRate,
         },
         select: {
           id: true,
@@ -244,7 +245,7 @@ export class AdminService {
         password: hashedPassword,
         role: rest.role || UserRole.TECHNICIAN,
         whitelisted: true,
-        defaultPayRate: rest.defaultPayRate,
+        defaultPayRate: effectivePayRate,
       },
       select: {
         id: true,
@@ -257,6 +258,7 @@ export class AdminService {
         profileImageUrl: true,
         role: true,
         whitelisted: true,
+        defaultPayRate: true,
         createdAt: true,
         updatedAt: true,
       },

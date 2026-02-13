@@ -7,30 +7,30 @@ export declare class UsersService {
     constructor(prisma: PrismaService, configService: ConfigService);
     findTechnicians(): import(".prisma/client").Prisma.PrismaPromise<{
         id: string;
-        email: string;
-        username: string;
         createdAt: Date;
         updatedAt: Date;
         firstName: string;
         lastName: string;
+        email: string;
         phone: string | null;
         address: string | null;
-        profileImageUrl: string | null;
+        username: string;
         role: import(".prisma/client").$Enums.UserRole;
+        profileImageUrl: string | null;
     }[]>;
     findAll(query: ListUsersQueryDto): Promise<{
         data: {
             id: string;
-            email: string;
-            username: string;
             createdAt: Date;
             updatedAt: Date;
             firstName: string;
             lastName: string;
+            email: string;
             phone: string | null;
             address: string | null;
-            profileImageUrl: string | null;
+            username: string;
             role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl: string | null;
             whitelisted: boolean;
         }[];
         pagination: {
@@ -43,16 +43,16 @@ export declare class UsersService {
     findOne(id: string): Promise<{
         workOrdersCount: number;
         id: string;
-        email: string;
-        username: string;
         createdAt: Date;
         updatedAt: Date;
         firstName: string;
         lastName: string;
+        email: string;
         phone: string | null;
         address: string | null;
-        profileImageUrl: string | null;
+        username: string;
         role: import(".prisma/client").$Enums.UserRole;
+        profileImageUrl: string | null;
         whitelisted: boolean;
         _count: {
             workOrdersAssigned: number;
@@ -60,16 +60,16 @@ export declare class UsersService {
     }>;
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        email: string;
-        username: string;
         createdAt: Date;
         updatedAt: Date;
         firstName: string;
         lastName: string;
+        email: string;
         phone: string | null;
         address: string | null;
-        profileImageUrl: string | null;
+        username: string;
         role: import(".prisma/client").$Enums.UserRole;
+        profileImageUrl: string | null;
         whitelisted: boolean;
     }>;
     findManagersAndTechnicians(): Promise<{
@@ -77,16 +77,16 @@ export declare class UsersService {
             workOrdersCount: number;
             timeEntriesCount: number;
             id: string;
-            email: string;
-            username: string;
             createdAt: Date;
             updatedAt: Date;
             firstName: string;
             lastName: string;
+            email: string;
             phone: string | null;
             address: string | null;
-            profileImageUrl: string | null;
+            username: string;
             role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl: string | null;
             whitelisted: boolean;
             _count: {
                 workOrdersAssigned: number;
@@ -97,16 +97,16 @@ export declare class UsersService {
             workOrdersCount: number;
             timeEntriesCount: number;
             id: string;
-            email: string;
-            username: string;
             createdAt: Date;
             updatedAt: Date;
             firstName: string;
             lastName: string;
+            email: string;
             phone: string | null;
             address: string | null;
-            profileImageUrl: string | null;
+            username: string;
             role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl: string | null;
             whitelisted: boolean;
             _count: {
                 workOrdersAssigned: number;

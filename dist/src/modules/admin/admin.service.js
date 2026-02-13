@@ -170,7 +170,8 @@ let AdminService = class AdminService {
         return results;
     }
     async createEmployee(dto) {
-        const { password, email, ...rest } = dto;
+        const { password, email, payRate, defaultPayRate, ...rest } = dto;
+        const effectivePayRate = defaultPayRate ?? payRate;
         const existingUser = await this.prisma.user.findUnique({
             where: { email },
         });
@@ -186,7 +187,7 @@ let AdminService = class AdminService {
                     ...rest,
                     password: hashedPassword,
                     whitelisted: true,
-                    defaultPayRate: rest.defaultPayRate,
+                    defaultPayRate: effectivePayRate,
                 },
                 select: {
                     id: true,
@@ -222,7 +223,7 @@ let AdminService = class AdminService {
                 password: hashedPassword,
                 role: rest.role || client_1.UserRole.TECHNICIAN,
                 whitelisted: true,
-                defaultPayRate: rest.defaultPayRate,
+                defaultPayRate: effectivePayRate,
             },
             select: {
                 id: true,
@@ -235,6 +236,7 @@ let AdminService = class AdminService {
                 profileImageUrl: true,
                 role: true,
                 whitelisted: true,
+                defaultPayRate: true,
                 createdAt: true,
                 updatedAt: true,
             },

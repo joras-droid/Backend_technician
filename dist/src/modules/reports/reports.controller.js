@@ -31,6 +31,15 @@ let ReportsController = class ReportsController {
     async getTimeSummary(query) {
         return this.reportsService.getTimeSummary(query);
     }
+    async getMetrics(duration) {
+        const validDurations = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+        const d = validDurations.includes(duration || '') ? duration : 'weekly';
+        return this.reportsService.getDashboardMetrics(d);
+    }
+    async getRecentActivity(limit) {
+        const l = limit ? parseInt(limit, 10) : 20;
+        return this.reportsService.getRecentActivities(isNaN(l) ? 20 : l);
+    }
     async exportData(query, res) {
         const result = await this.reportsService.exportData(query.type, query);
         res.setHeader('Content-Type', result.contentType);
@@ -84,6 +93,49 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getTimeSummary", null);
+__decorate([
+    (0, common_1.Get)('metrics'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Dashboard metrics (Admin/Manager)',
+        description: 'Get dashboard metrics with optional duration filter (weekly, monthly, etc.)',
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: 'duration',
+        required: false,
+        enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+        description: 'Time period for metrics aggregation',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Dashboard metrics with stat cards, charts, and KPIs',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
+    __param(0, (0, common_1.Query)('duration')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "getMetrics", null);
+__decorate([
+    (0, common_1.Get)('recent-activity'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Recent activities (Admin/Manager)',
+        description: 'Get recent activities of technicians and managers - work orders, employees, equipment, time entries',
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, description: 'Max items to return (default 20)' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Recent activity feed',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "getRecentActivity", null);
 __decorate([
     (0, common_1.Get)('export'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

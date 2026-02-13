@@ -88,6 +88,18 @@ export class CreateEmployeeDto {
   @IsNumber()
   @Min(0)
   defaultPayRate?: number;
+
+  /** Alias for defaultPayRate - accepts either payRate or defaultPayRate from client */
+  @ApiPropertyOptional({
+    description: 'Pay rate (alias for defaultPayRate)',
+    example: 25.0,
+    minimum: 0,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  payRate?: number;
 }
 
 export class WhitelistEmailDto {

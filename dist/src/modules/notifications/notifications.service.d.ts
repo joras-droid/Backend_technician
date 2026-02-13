@@ -8,14 +8,14 @@ export declare class NotificationsService {
             id: string;
             createdAt: Date;
             type: import(".prisma/client").$Enums.NotificationType;
-            title: string;
-            message: string;
             entityId: string | null;
             userId: string;
             channel: import(".prisma/client").$Enums.NotificationChannel;
-            entityType: string | null;
+            title: string;
+            message: string;
             deliveredAt: Date | null;
             readAt: Date | null;
+            entityType: string | null;
         }[];
         pagination: {
             page: number;
@@ -28,14 +28,14 @@ export declare class NotificationsService {
         id: string;
         createdAt: Date;
         type: import(".prisma/client").$Enums.NotificationType;
-        title: string;
-        message: string;
         entityId: string | null;
         userId: string;
         channel: import(".prisma/client").$Enums.NotificationChannel;
-        entityType: string | null;
+        title: string;
+        message: string;
         deliveredAt: Date | null;
         readAt: Date | null;
+        entityType: string | null;
     }>;
     getUnreadCount(userId: string): Promise<{
         unreadCount: number;
