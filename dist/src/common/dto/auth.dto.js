@@ -152,18 +152,32 @@ __decorate([
     __metadata("design:type", String)
 ], PasswordResetRequestDto.prototype, "email", void 0);
 class PasswordResetConfirmDto {
-    token;
+    email;
+    otp;
     newPassword;
 }
 exports.PasswordResetConfirmDto = PasswordResetConfirmDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: 'Password reset token from email',
-        example: 'reset-token-from-email',
+        description: 'User email address (same as used in request)',
+        example: 'user@example.com',
+    }),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], PasswordResetConfirmDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'OTP code received via email (6 digits)',
+        example: '123456',
+        minLength: 6,
+        maxLength: 6,
     }),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(6, { message: 'OTP must be 6 digits' }),
+    (0, class_validator_1.MaxLength)(6, { message: 'OTP must be 6 digits' }),
+    (0, class_validator_1.Matches)(/^\d{6}$/, { message: 'OTP must be exactly 6 digits' }),
     __metadata("design:type", String)
-], PasswordResetConfirmDto.prototype, "token", void 0);
+], PasswordResetConfirmDto.prototype, "otp", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'New password',

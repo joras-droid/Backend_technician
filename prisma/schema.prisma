@@ -258,3 +258,12 @@ enum NotificationChannel {
   EMAIL
   PUSH
 }
+
+model PasswordResetOtp {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  email   String
+  otp     String
+  expiresAt DateTime
+}

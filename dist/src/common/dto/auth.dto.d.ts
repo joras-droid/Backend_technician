@@ -17,7 +17,8 @@ export declare class PasswordResetRequestDto {
     email: string;
 }
 export declare class PasswordResetConfirmDto {
-    token: string;
+    email: string;
+    otp: string;
     newPassword: string;
 }
 export declare class ChangePasswordDto {

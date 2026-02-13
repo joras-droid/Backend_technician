@@ -15,6 +15,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ReportsModule } from './modules/reports/reports.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { S3Module } from './common/services/s3.module';
+import { EmailModule } from './common/services/email.module';
 import { LoggerModule } from './common/services/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     }),
     PrismaModule,
     S3Module,
+    EmailModule,
     LoggerModule,
     UsersModule,
     ClientsModule,

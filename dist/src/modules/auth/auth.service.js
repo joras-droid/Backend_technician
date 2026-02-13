@@ -47,16 +47,21 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
 const bcrypt = __importStar(require("bcrypt"));
+const crypto = __importStar(require("crypto"));
 const prisma_service_1 = require("../../prisma/prisma.service");
+const email_service_1 = require("../../common/services/email.service");
 const client_1 = require("@prisma/client");
+const OTP_EXPIRY_MINUTES = 10;
 let AuthService = class AuthService {
     prisma;
     jwtService;
     configService;
-    constructor(prisma, jwtService, configService) {
+    emailService;
+    constructor(prisma, jwtService, configService, emailService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.emailService = emailService;
     }
     async signUp(signUpDto) {
         const { password, email, username, ...rest } = signUpDto;
@@ -315,15 +320,58 @@ let AuthService = class AuthService {
         });
         if (!user) {
             return {
-                message: 'If the email exists, a password reset link has been sent',
+                message: 'If the email exists, a password reset OTP has been sent',
             };
         }
-        const resetToken = `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (user.role !== client_1.UserRole.MANAGER && user.role !== client_1.UserRole.TECHNICIAN) {
+            return {
+                message: 'If the email exists, a password reset OTP has been sent',
+            };
+        }
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
+        await this.prisma.passwordResetOtp.deleteMany({
+            where: { email },
+        });
+        await this.prisma.passwordResetOtp.create({
+            data: { email, otp, expiresAt },
+        });
+        await this.emailService.sendPasswordResetOtp(email, otp, user.firstName);
         return {
-            message: 'If the email exists, a password reset link has been sent',
+            message: 'If the email exists, a password reset OTP has been sent',
         };
     }
-    async confirmPasswordReset(token, newPassword) {
+    async confirmPasswordReset(email, otp, newPassword) {
+        const otpRecord = await this.prisma.passwordResetOtp.findFirst({
+            where: { email, otp },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (!otpRecord) {
+            throw new common_1.BadRequestException('Invalid or expired OTP');
+        }
+        if (new Date() > otpRecord.expiresAt) {
+            await this.prisma.passwordResetOtp.delete({ where: { id: otpRecord.id } });
+            throw new common_1.BadRequestException('OTP has expired. Please request a new one.');
+        }
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+        if (!user) {
+            throw new common_1.BadRequestException('Invalid or expired OTP');
+        }
+        if (user.role !== client_1.UserRole.MANAGER && user.role !== client_1.UserRole.TECHNICIAN) {
+            throw new common_1.BadRequestException('Password reset is not allowed for this account type');
+        }
+        const saltRounds = parseInt(this.configService.get('BCRYPT_ROUNDS', '10'), 10);
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        await this.prisma.$transaction([
+            this.prisma.user.update({
+                where: { email },
+                data: { password: hashedPassword },
+            }),
+            this.prisma.passwordResetOtp.delete({ where: { id: otpRecord.id } }),
+        ]);
         return {
             message: 'Password reset successfully',
         };
@@ -334,6 +382,7 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        email_service_1.EmailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

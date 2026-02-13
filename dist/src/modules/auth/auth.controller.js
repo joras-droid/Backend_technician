@@ -84,7 +84,7 @@ let AuthController = class AuthController {
         return this.authService.requestPasswordReset(dto.email);
     }
     async confirmPasswordReset(dto) {
-        return this.authService.confirmPasswordReset(dto.token, dto.newPassword);
+        return this.authService.confirmPasswordReset(dto.email, dto.otp, dto.newPassword);
     }
     async updateProfile(req, dto) {
         return this.authService.updateProfile(req.user.id, dto);
@@ -252,12 +252,12 @@ __decorate([
     (0, common_1.Post)('password-reset/request'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
-        summary: 'Request password reset',
-        description: 'Request password reset email',
+        summary: 'Request password reset (Manager & Technician)',
+        description: 'Send OTP code to email for password reset. Only available for manager and technician accounts.',
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Password reset email sent (if email exists)',
+        description: 'OTP sent to email (if account exists and is manager/technician)',
     }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -269,14 +269,14 @@ __decorate([
     (0, common_1.Post)('password-reset/confirm'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
-        summary: 'Confirm password reset',
-        description: 'Confirm password reset with token',
+        summary: 'Confirm password reset with OTP',
+        description: 'Verify OTP and set new password',
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
         description: 'Password reset successfully',
     }),
-    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid or expired token' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid or expired OTP' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [auth_dto_2.PasswordResetConfirmDto]),

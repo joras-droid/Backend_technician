@@ -170,7 +170,8 @@ export class AdminService {
   }
 
   /**
-   * Create employee account directly (with password)
+   * Create employee account directly (with password).
+   * Accounts created via this endpoint are automatically whitelisted (whitelisted: true).
    */
   async createEmployee(dto: CreateEmployeeDto) {
     const { password, email, payRate, defaultPayRate, ...rest } = dto;

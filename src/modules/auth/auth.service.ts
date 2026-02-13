@@ -2,12 +2,15 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type { StringValue } from 'ms';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../../common/services/email.service';
 import { SignUpDto, SignInDto } from '../../common/dto/auth.dto';
 import { UserRole } from '@prisma/client';
 
@@ -28,12 +31,15 @@ type UserSelectResult = {
   updatedAt: Date;
 };
 
+const OTP_EXPIRY_MINUTES = 10;
+
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private emailService: EmailService,
   ) {}
 
   async signUp(signUpDto: SignUpDto) {
@@ -353,6 +359,10 @@ export class AuthService {
     };
   }
 
+  /**
+   * Request password reset - sends OTP to manager or technician email.
+   * Only MANAGER and TECHNICIAN roles can use forgot password.
+   */
   async requestPasswordReset(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -361,29 +371,89 @@ export class AuthService {
     // Don't reveal if user exists or not (security best practice)
     if (!user) {
       return {
-        message: 'If the email exists, a password reset link has been sent',
+        message: 'If the email exists, a password reset OTP has been sent',
       };
     }
 
-    // Generate reset token (in production, use crypto.randomBytes or similar)
-    const resetToken = `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Only manager and technician can use forgot password
+    if (user.role !== UserRole.MANAGER && user.role !== UserRole.TECHNICIAN) {
+      return {
+        message: 'If the email exists, a password reset OTP has been sent',
+      };
+    }
 
-    // Store reset token (in production, use a separate table with expiration)
-    // For now, we'll just return success message
-    // TODO: Implement email sending and token storage
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
+
+    // Invalidate any existing OTPs for this email
+    await this.prisma.passwordResetOtp.deleteMany({
+      where: { email },
+    });
+
+    // Store OTP
+    await this.prisma.passwordResetOtp.create({
+      data: { email, otp, expiresAt },
+    });
+
+    // Send OTP email
+    await this.emailService.sendPasswordResetOtp(
+      email,
+      otp,
+      user.firstName,
+    );
 
     return {
-      message: 'If the email exists, a password reset link has been sent',
+      message: 'If the email exists, a password reset OTP has been sent',
     };
   }
 
-  async confirmPasswordReset(token: string, newPassword: string) {
-    // In production, verify token from database and check expiration
-    // For now, basic implementation
-    // TODO: Implement proper token verification
+  /**
+   * Confirm password reset with OTP - for manager and technician.
+   */
+  async confirmPasswordReset(email: string, otp: string, newPassword: string) {
+    const otpRecord = await this.prisma.passwordResetOtp.findFirst({
+      where: { email, otp },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    // Extract user ID from token (in production, store token-user mapping)
-    // This is a simplified implementation
+    if (!otpRecord) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    if (new Date() > otpRecord.expiresAt) {
+      await this.prisma.passwordResetOtp.delete({ where: { id: otpRecord.id } });
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    if (user.role !== UserRole.MANAGER && user.role !== UserRole.TECHNICIAN) {
+      throw new BadRequestException('Password reset is not allowed for this account type');
+    }
+
+    const saltRounds = parseInt(
+      this.configService.get<string>('BCRYPT_ROUNDS', '10'),
+      10,
+    );
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { email },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordResetOtp.delete({ where: { id: otpRecord.id } }),
+    ]);
+
     return {
       message: 'Password reset successfully',
     };

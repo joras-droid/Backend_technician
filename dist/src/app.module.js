@@ -24,6 +24,7 @@ const notifications_module_1 = require("./modules/notifications/notifications.mo
 const reports_module_1 = require("./modules/reports/reports.module");
 const equipment_module_1 = require("./modules/equipment/equipment.module");
 const s3_module_1 = require("./common/services/s3.module");
+const email_module_1 = require("./common/services/email.module");
 const logger_module_1 = require("./common/services/logger.module");
 const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
 const jwt_auth_guard_1 = require("./modules/auth/guards/jwt-auth.guard");
@@ -38,6 +39,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             prisma_module_1.PrismaModule,
             s3_module_1.S3Module,
+            email_module_1.EmailModule,
             logger_module_1.LoggerModule,
             users_module_1.UsersModule,
             clients_module_1.ClientsModule,

@@ -1,6 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../../common/services/email.service';
 import { SignUpDto, SignInDto } from '../../common/dto/auth.dto';
 import { UserRole } from '@prisma/client';
 type UserSelectResult = {
@@ -22,7 +23,8 @@ export declare class AuthService {
     private prisma;
     private jwtService;
     private configService;
-    constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService);
+    private emailService;
+    constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService, emailService: EmailService);
     signUp(signUpDto: SignUpDto): Promise<{
         accessToken: string;
         refreshToken: string;
@@ -60,7 +62,7 @@ export declare class AuthService {
     requestPasswordReset(email: string): Promise<{
         message: string;
     }>;
-    confirmPasswordReset(token: string, newPassword: string): Promise<{
+    confirmPasswordReset(email: string, otp: string, newPassword: string): Promise<{
         message: string;
     }>;
 }

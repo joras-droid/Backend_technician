@@ -126,11 +126,23 @@ export class PasswordResetRequestDto {
 
 export class PasswordResetConfirmDto {
   @ApiProperty({
-    description: 'Password reset token from email',
-    example: 'reset-token-from-email',
+    description: 'User email address (same as used in request)',
+    example: 'user@example.com',
+  })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    description: 'OTP code received via email (6 digits)',
+    example: '123456',
+    minLength: 6,
+    maxLength: 6,
   })
   @IsString()
-  token: string;
+  @MinLength(6, { message: 'OTP must be 6 digits' })
+  @MaxLength(6, { message: 'OTP must be 6 digits' })
+  @Matches(/^\d{6}$/, { message: 'OTP must be exactly 6 digits' })
+  otp: string;
 
   @ApiProperty({
     description: 'New password',

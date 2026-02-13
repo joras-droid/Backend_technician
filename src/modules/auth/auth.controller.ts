@@ -257,12 +257,12 @@ export class AuthController {
   @Post('password-reset/request')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Request password reset',
-    description: 'Request password reset email',
+    summary: 'Request password reset (Manager & Technician)',
+    description: 'Send OTP code to email for password reset. Only available for manager and technician accounts.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Password reset email sent (if email exists)',
+    description: 'OTP sent to email (if account exists and is manager/technician)',
   })
   async requestPasswordReset(@Body() dto: PasswordResetRequestDto) {
     return this.authService.requestPasswordReset(dto.email);
@@ -272,16 +272,16 @@ export class AuthController {
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Confirm password reset',
-    description: 'Confirm password reset with token',
+    summary: 'Confirm password reset with OTP',
+    description: 'Verify OTP and set new password',
   })
   @ApiResponse({
     status: 200,
     description: 'Password reset successfully',
   })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
   async confirmPasswordReset(@Body() dto: PasswordResetConfirmDto) {
-    return this.authService.confirmPasswordReset(dto.token, dto.newPassword);
+    return this.authService.confirmPasswordReset(dto.email, dto.otp, dto.newPassword);
   }
 
   @UseGuards(JwtAuthGuard)
