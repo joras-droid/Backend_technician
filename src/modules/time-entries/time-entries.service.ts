@@ -11,6 +11,28 @@ import {
   EditTimeEntryDto,
 } from '../../common/dto/time-entry.dto';
 
+const MILES_TO_KM = 1.609344;
+const CHECK_IN_RADIUS_MILES = 1;
+
+function haversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 @Injectable()
 export class TimeEntriesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -27,6 +49,22 @@ export class TimeEntriesService {
 
     if (workOrder.technicianId !== technicianId) {
       throw new ForbiddenException('Work order is not assigned to you');
+    }
+
+    // Validate technician is within 1 mile of facility (when facility coordinates exist)
+    if (workOrder.facilityLat != null && workOrder.facilityLng != null) {
+      const distanceKm = haversineDistanceKm(
+        workOrder.facilityLat,
+        workOrder.facilityLng,
+        dto.checkInLat,
+        dto.checkInLng,
+      );
+      const distanceMiles = distanceKm / MILES_TO_KM;
+      if (distanceMiles > CHECK_IN_RADIUS_MILES) {
+        throw new BadRequestException(
+          `Check-in denied: You must be within ${CHECK_IN_RADIUS_MILES} mile(s) of the facility. Current distance: ${distanceMiles.toFixed(2)} miles.`,
+        );
+      }
     }
 
     // Check if already checked in

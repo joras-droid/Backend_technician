@@ -12,6 +12,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TimeEntriesService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const MILES_TO_KM = 1.609344;
+const CHECK_IN_RADIUS_MILES = 1;
+function haversineDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
 let TimeEntriesService = class TimeEntriesService {
     prisma;
     constructor(prisma) {
@@ -26,6 +40,13 @@ let TimeEntriesService = class TimeEntriesService {
         }
         if (workOrder.technicianId !== technicianId) {
             throw new common_1.ForbiddenException('Work order is not assigned to you');
+        }
+        if (workOrder.facilityLat != null && workOrder.facilityLng != null) {
+            const distanceKm = haversineDistanceKm(workOrder.facilityLat, workOrder.facilityLng, dto.checkInLat, dto.checkInLng);
+            const distanceMiles = distanceKm / MILES_TO_KM;
+            if (distanceMiles > CHECK_IN_RADIUS_MILES) {
+                throw new common_1.BadRequestException(`Check-in denied: You must be within ${CHECK_IN_RADIUS_MILES} mile(s) of the facility. Current distance: ${distanceMiles.toFixed(2)} miles.`);
+            }
         }
         const existingEntry = await this.prisma.timeEntry.findFirst({
             where: {

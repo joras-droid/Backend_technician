@@ -14,6 +14,8 @@ export declare class CreateWorkOrderDto {
     flatRate?: number;
     facilityName: string;
     facilityAddress: string;
+    facilityLat: number;
+    facilityLng: number;
     pointOfContact?: string;
     tasks?: string;
     notes?: string;
@@ -35,6 +37,8 @@ export declare class UpdateWorkOrderDto {
     flatRate?: number;
     facilityName?: string;
     facilityAddress?: string;
+    facilityLat?: number;
+    facilityLng?: number;
     pointOfContact?: string;
     tasks?: string;
     notes?: string;

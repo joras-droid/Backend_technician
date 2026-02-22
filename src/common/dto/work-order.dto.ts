@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  Max,
   IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -80,6 +81,28 @@ export class CreateWorkOrderDto {
 
   @IsString()
   facilityAddress: string;
+
+  @ApiProperty({
+    example: 40.7128,
+    description: 'Facility latitude for 1-mile check-in validation (required for geo-fencing)',
+    minimum: -90,
+    maximum: 90,
+  })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  facilityLat: number;
+
+  @ApiProperty({
+    example: -74.006,
+    description: 'Facility longitude for 1-mile check-in validation (required for geo-fencing)',
+    minimum: -180,
+    maximum: 180,
+  })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  facilityLng: number;
 
   @IsOptional()
   @IsString()
@@ -173,6 +196,30 @@ export class UpdateWorkOrderDto {
   @IsOptional()
   @IsString()
   facilityAddress?: string;
+
+  @ApiPropertyOptional({
+    example: 40.7128,
+    description: 'Facility latitude for 1-mile check-in validation',
+    minimum: -90,
+    maximum: 90,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  facilityLat?: number;
+
+  @ApiPropertyOptional({
+    example: -74.006,
+    description: 'Facility longitude for 1-mile check-in validation',
+    minimum: -180,
+    maximum: 180,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  facilityLng?: number;
 
   @IsOptional()
   @IsString()

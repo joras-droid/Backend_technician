@@ -239,6 +239,8 @@ export class WorkOrdersService {
         flatRate: dto.flatRate,
         facilityName: dto.facilityName,
         facilityAddress: dto.facilityAddress,
+        facilityLat: dto.facilityLat,
+        facilityLng: dto.facilityLng,
         pointOfContact: dto.pointOfContact,
         tasks: dto.tasks,
         notes: dto.notes,
@@ -319,6 +321,8 @@ export class WorkOrdersService {
         'payRate',
         'facilityName',
         'facilityAddress',
+        'facilityLat',
+        'facilityLng',
         'pointOfContact',
         'clientId',
         'technicianId',
@@ -363,6 +367,8 @@ export class WorkOrdersService {
     if (dto.flatRate !== undefined && isAdminOrManager) updateData.flatRate = dto.flatRate;
     if (dto.facilityName && isAdminOrManager) updateData.facilityName = dto.facilityName;
     if (dto.facilityAddress && isAdminOrManager) updateData.facilityAddress = dto.facilityAddress;
+    if (dto.facilityLat !== undefined && isAdminOrManager) updateData.facilityLat = dto.facilityLat;
+    if (dto.facilityLng !== undefined && isAdminOrManager) updateData.facilityLng = dto.facilityLng;
     if (dto.pointOfContact !== undefined && isAdminOrManager) updateData.pointOfContact = dto.pointOfContact;
     if (dto.tasks !== undefined) updateData.tasks = dto.tasks;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
@@ -483,6 +489,8 @@ export class WorkOrdersService {
         flatRate: original.flatRate,
         facilityName: original.facilityName,
         facilityAddress: original.facilityAddress,
+        facilityLat: original.facilityLat,
+        facilityLng: original.facilityLng,
         pointOfContact: original.pointOfContact,
         tasks: original.tasks,
         notes: original.notes,

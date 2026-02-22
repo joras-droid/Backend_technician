@@ -80,6 +80,8 @@ model WorkOrder {
 
   facilityName    String
   facilityAddress String
+  facilityLat     Float?   // Facility latitude for 1-mile check-in validation
+  facilityLng     Float?   // Facility longitude for 1-mile check-in validation
   pointOfContact  String?
   tasks           String?
   notes           String?

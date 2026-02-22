@@ -62,6 +62,8 @@ class CreateWorkOrderDto {
     flatRate;
     facilityName;
     facilityAddress;
+    facilityLat;
+    facilityLng;
     pointOfContact;
     tasks;
     notes;
@@ -117,6 +119,30 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateWorkOrderDto.prototype, "facilityAddress", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 40.7128,
+        description: 'Facility latitude for 1-mile check-in validation',
+        minimum: -90,
+        maximum: 90,
+    }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-90),
+    (0, class_validator_1.Max)(90),
+    __metadata("design:type", Number)
+], CreateWorkOrderDto.prototype, "facilityLat", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: -74.006,
+        description: 'Facility longitude for 1-mile check-in validation',
+        minimum: -180,
+        maximum: 180,
+    }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-180),
+    (0, class_validator_1.Max)(180),
+    __metadata("design:type", Number)
+], CreateWorkOrderDto.prototype, "facilityLng", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -203,6 +229,8 @@ class UpdateWorkOrderDto {
     flatRate;
     facilityName;
     facilityAddress;
+    facilityLat;
+    facilityLng;
     pointOfContact;
     tasks;
     notes;
@@ -247,6 +275,32 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateWorkOrderDto.prototype, "facilityAddress", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 40.7128,
+        description: 'Facility latitude for 1-mile check-in validation',
+        minimum: -90,
+        maximum: 90,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-90),
+    (0, class_validator_1.Max)(90),
+    __metadata("design:type", Number)
+], UpdateWorkOrderDto.prototype, "facilityLat", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: -74.006,
+        description: 'Facility longitude for 1-mile check-in validation',
+        minimum: -180,
+        maximum: 180,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-180),
+    (0, class_validator_1.Max)(180),
+    __metadata("design:type", Number)
+], UpdateWorkOrderDto.prototype, "facilityLng", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
