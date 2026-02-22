@@ -248,6 +248,66 @@ let WorkOrdersService = class WorkOrdersService {
         });
         return workOrder;
     }
+    async assignTechnician(workOrderId, technicianId, callerId, callerRole) {
+        const workOrder = await this.prisma.workOrder.findUnique({
+            where: { id: workOrderId },
+        });
+        if (!workOrder) {
+            throw new common_1.NotFoundException('Work order not found');
+        }
+        const isAdminOrManager = callerRole === client_1.UserRole.ADMIN || callerRole === client_1.UserRole.MANAGER;
+        if (isAdminOrManager) {
+            const technician = await this.prisma.user.findUnique({
+                where: { id: technicianId },
+            });
+            if (!technician) {
+                throw new common_1.NotFoundException('Technician not found');
+            }
+            if (technician.role !== client_1.UserRole.TECHNICIAN) {
+                throw new common_1.BadRequestException('User is not a technician');
+            }
+        }
+        else {
+            if (technicianId !== callerId) {
+                throw new common_1.BadRequestException('Technicians can only assign themselves. Use your own user ID.');
+            }
+            if (workOrder.technicianId != null) {
+                throw new common_1.BadRequestException('Work order is already assigned. Only unassigned work orders can be claimed.');
+            }
+            const technician = await this.prisma.user.findUnique({
+                where: { id: technicianId },
+            });
+            if (!technician || technician.role !== client_1.UserRole.TECHNICIAN) {
+                throw new common_1.BadRequestException('Invalid technician');
+            }
+        }
+        return this.prisma.workOrder.update({
+            where: { id: workOrderId },
+            data: { technicianId },
+            include: {
+                attachments: true,
+                equipment: true,
+                client: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                    },
+                },
+                technician: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        phone: true,
+                        profileImageUrl: true,
+                    },
+                },
+            },
+        });
+    }
     async update(id, dto, userId, userRole) {
         const existing = await this.prisma.workOrder.findUnique({
             where: { id },

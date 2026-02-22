@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Query,
+  Param,
+  Request,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -12,6 +14,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiQuery,
+  ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -20,6 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { AuthenticatedRequest } from '../../common/interfaces/request.interface';
 
 @ApiTags('reports')
 @ApiBearerAuth('JWT-auth')
@@ -47,8 +51,11 @@ export class ReportsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
-  async getWorkOrderReport(@Query() query: any) {
-    return this.reportsService.getWorkOrderReport(query);
+  async getWorkOrderReport(
+    @Query() query: any,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.reportsService.getWorkOrderReport(query, req.user.role);
   }
 
   @Get('time-summary')
@@ -66,8 +73,11 @@ export class ReportsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
-  async getTimeSummary(@Query() query: any) {
-    return this.reportsService.getTimeSummary(query);
+  async getTimeSummary(
+    @Query() query: any,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.reportsService.getTimeSummary(query, req.user.role);
   }
 
   @Get('metrics')
@@ -88,10 +98,13 @@ export class ReportsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
-  async getMetrics(@Query('duration') duration?: string) {
+  async getMetrics(
+    @Query('duration') duration: string | undefined,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const validDurations = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
     const d = validDurations.includes(duration || '') ? duration : 'weekly';
-    return this.reportsService.getDashboardMetrics(d as any);
+    return this.reportsService.getDashboardMetrics(d as any, req.user.role);
   }
 
   @Get('recent-activity')
@@ -107,9 +120,12 @@ export class ReportsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
-  async getRecentActivity(@Query('limit') limit?: string) {
+  async getRecentActivity(
+    @Query('limit') limit: string | undefined,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const l = limit ? parseInt(limit, 10) : 20;
-    return this.reportsService.getRecentActivities(isNaN(l) ? 20 : l);
+    return this.reportsService.getRecentActivities(isNaN(l) ? 20 : l, req.user.role);
   }
 
   @Get('export')
@@ -121,7 +137,7 @@ export class ReportsController {
   @ApiQuery({
     name: 'type',
     required: true,
-    enum: ['work-orders', 'time-entries', 'clients', 'users'],
+    enum: ['work-orders', 'time-entries', 'clients', 'users', 'individual-performance'],
   })
   @ApiQuery({ name: 'startDate', required: false, type: String })
   @ApiQuery({ name: 'endDate', required: false, type: String })
@@ -137,15 +153,58 @@ export class ReportsController {
       },
     },
   })
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'Filter by user ID (for individual export)' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or Manager role required' })
-  async exportData(@Query() query: any, @Res() res: Response) {
-    const result = await this.reportsService.exportData(query.type, query);
+  async exportData(
+    @Query() query: any,
+    @Res() res: Response,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const result = await this.reportsService.exportData(
+      query.type,
+      query,
+      req.user.role,
+    );
     res.setHeader('Content-Type', result.contentType);
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${result.filename}"`,
     );
     res.send(result.data);
+  }
+
+  @Get('individual-performance/:userId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Individual performance (Admin/Manager)',
+    description:
+      'Get performance charts, pie charts, and metrics for a specific user. Admin: Manager or Technician. Manager: Technician only.',
+  })
+  @ApiParam({ name: 'userId', description: 'User ID (Manager or Technician)' })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({
+    name: 'duration',
+    required: false,
+    enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Individual performance with charts and metrics',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Manager cannot view Manager performance' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getIndividualPerformance(
+    @Param('userId') userId: string,
+    @Query() query: any,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.reportsService.getIndividualPerformance(
+      userId,
+      query,
+      req.user.role,
+    );
   }
 }

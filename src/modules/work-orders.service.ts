@@ -12,7 +12,7 @@ import {
   UpdateWorkOrderDto,
   DuplicateWorkOrderDto,
 } from '../common/dto/work-order.dto';
-import { WorkOrderStatus } from '@prisma/client';
+import { WorkOrderStatus, UserRole } from '@prisma/client';
 
 @Injectable()
 export class WorkOrdersService {
@@ -287,6 +287,82 @@ export class WorkOrdersService {
     });
 
     return workOrder;
+  }
+
+  async assignTechnician(
+    workOrderId: string,
+    technicianId: string,
+    callerId: string,
+    callerRole: string,
+  ) {
+    const workOrder = await this.prisma.workOrder.findUnique({
+      where: { id: workOrderId },
+    });
+
+    if (!workOrder) {
+      throw new NotFoundException('Work order not found');
+    }
+
+    const isAdminOrManager =
+      callerRole === UserRole.ADMIN || callerRole === UserRole.MANAGER;
+
+    if (isAdminOrManager) {
+      // Admin/Manager: assign any technician
+      const technician = await this.prisma.user.findUnique({
+        where: { id: technicianId },
+      });
+      if (!technician) {
+        throw new NotFoundException('Technician not found');
+      }
+      if (technician.role !== UserRole.TECHNICIAN) {
+        throw new BadRequestException('User is not a technician');
+      }
+    } else {
+      // Technician: can only assign themselves to unassigned work orders
+      if (technicianId !== callerId) {
+        throw new BadRequestException(
+          'Technicians can only assign themselves. Use your own user ID.',
+        );
+      }
+      if (workOrder.technicianId != null) {
+        throw new BadRequestException(
+          'Work order is already assigned. Only unassigned work orders can be claimed.',
+        );
+      }
+      const technician = await this.prisma.user.findUnique({
+        where: { id: technicianId },
+      });
+      if (!technician || technician.role !== UserRole.TECHNICIAN) {
+        throw new BadRequestException('Invalid technician');
+      }
+    }
+
+    return this.prisma.workOrder.update({
+      where: { id: workOrderId },
+      data: { technicianId },
+      include: {
+        attachments: true,
+        equipment: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        technician: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            profileImageUrl: true,
+          } as any,
+        } as any,
+      },
+    });
   }
 
   async update(id: string, dto: UpdateWorkOrderDto, userId: string, userRole?: string) {

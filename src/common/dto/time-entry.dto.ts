@@ -33,27 +33,31 @@ export class CheckInDto {
 }
 
 export class CheckOutDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 40.7128,
-    description: 'GPS latitude',
+    description:
+      'GPS latitude (required for Technician; optional for Admin/Manager super user)',
     minimum: -90,
     maximum: 90,
   })
+  @IsOptional()
   @IsNumber()
   @Min(-90)
   @Max(90)
-  checkOutLat: number;
+  checkOutLat?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: -74.0060,
-    description: 'GPS longitude',
+    description:
+      'GPS longitude (required for Technician; optional for Admin/Manager super user)',
     minimum: -180,
     maximum: 180,
   })
+  @IsOptional()
   @IsNumber()
   @Min(-180)
   @Max(180)
-  checkOutLng: number;
+  checkOutLng?: number;
 }
 
 export class EditTimeEntryDto {

@@ -3,7 +3,8 @@ type DurationType = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 export declare class ReportsService {
     private readonly prisma;
     constructor(prisma: PrismaService);
-    getWorkOrderReport(query: any): Promise<{
+    private getAllowedTechnicianIds;
+    getWorkOrderReport(query: any, callerRole?: string): Promise<{
         summary: {
             totalWorkOrders: number;
             activeWorkOrders: number;
@@ -19,7 +20,7 @@ export declare class ReportsService {
             endDate: Date | null;
         };
     }>;
-    getTimeSummary(query: any): Promise<{
+    getTimeSummary(query: any, callerRole?: string): Promise<{
         summary: {
             totalHours: number;
             totalWorkOrders: number;
@@ -31,12 +32,49 @@ export declare class ReportsService {
             endDate: Date | null;
         };
     }>;
-    exportData(type: string, query: any): Promise<{
+    exportData(type: string, query: any, callerRole?: string): Promise<{
         contentType: string;
         filename: string;
         data: string;
     }>;
-    getDashboardMetrics(duration?: DurationType): Promise<{
+    getIndividualPerformance(userId: string, query: any, callerRole?: string): Promise<{
+        user: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+            role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl: string | null;
+        };
+        summary: {
+            workOrdersTotal: number;
+            workOrdersCompleted: number;
+            workOrdersActive: number;
+            workOrdersPaid: number;
+            totalHours: number;
+            totalEarnings: number;
+            avgHoursPerOrder: number;
+        };
+        lineChart: {
+            labels: string[];
+            datasets: {
+                label: string;
+                data: any[];
+            }[];
+        };
+        pieChart: {
+            byStatus: {
+                label: string;
+                value: number;
+                color: string;
+            }[];
+        };
+        period: {
+            startDate: Date;
+            endDate: Date;
+        };
+    }>;
+    getDashboardMetrics(duration?: DurationType, callerRole?: string): Promise<{
         dashboardMetrics: {
             statCards: {
                 id: string;
@@ -88,7 +126,7 @@ export declare class ReportsService {
             };
         };
     }>;
-    getRecentActivities(limit?: number): Promise<{
+    getRecentActivities(limit?: number, callerRole?: string): Promise<{
         items: any[];
         unreadCount: number;
         totalCount: number;

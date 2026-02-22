@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -172,9 +173,20 @@ export class AdminService {
   /**
    * Create employee account directly (with password).
    * Accounts created via this endpoint are automatically whitelisted (whitelisted: true).
+   * Managers can only create TECHNICIAN roles; Admins can create any role.
    */
-  async createEmployee(dto: CreateEmployeeDto) {
+  async createEmployee(dto: CreateEmployeeDto, callerRole?: string) {
     const { password, email, payRate, defaultPayRate, ...rest } = dto;
+    const requestedRole = rest.role || UserRole.TECHNICIAN;
+
+    // Managers cannot create Admin or Manager - only Technicians
+    if (callerRole === UserRole.MANAGER) {
+      if (requestedRole === UserRole.ADMIN || requestedRole === UserRole.MANAGER) {
+        throw new ForbiddenException(
+          'Managers can only create Technician accounts. Cannot create Admin or Manager.',
+        );
+      }
+    }
     const effectivePayRate = defaultPayRate ?? payRate;
 
     // Check if user already exists

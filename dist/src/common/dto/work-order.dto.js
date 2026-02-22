@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ListWorkOrdersQueryDto = exports.RequestAttachmentPresignedUrlDto = exports.CreateAttachmentDto = exports.UpdateWorkOrderDto = exports.DuplicateWorkOrderDto = exports.CreateWorkOrderDto = exports.CreateWorkOrderEquipmentDto = void 0;
+exports.ListWorkOrdersQueryDto = exports.RequestAttachmentPresignedUrlDto = exports.CreateAttachmentDto = exports.UpdateWorkOrderDto = exports.DuplicateWorkOrderDto = exports.AssignTechnicianDto = exports.CreateWorkOrderDto = exports.CreateWorkOrderEquipmentDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const swagger_1 = require("@nestjs/swagger");
@@ -122,7 +122,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         example: 40.7128,
-        description: 'Facility latitude for 1-mile check-in validation',
+        description: 'Facility latitude for 1-mile check-in validation (required for geo-fencing)',
         minimum: -90,
         maximum: 90,
     }),
@@ -134,7 +134,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         example: -74.006,
-        description: 'Facility longitude for 1-mile check-in validation',
+        description: 'Facility longitude for 1-mile check-in validation (required for geo-fencing)',
         minimum: -180,
         maximum: 180,
     }),
@@ -189,6 +189,18 @@ __decorate([
     (0, class_transformer_1.Type)(() => CreateWorkOrderEquipmentDto),
     __metadata("design:type", Array)
 ], CreateWorkOrderDto.prototype, "equipment", void 0);
+class AssignTechnicianDto {
+    technicianId;
+}
+exports.AssignTechnicianDto = AssignTechnicianDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 'clx1234567890',
+        description: 'Technician user ID to assign. Technicians can only assign themselves (use own userId).',
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], AssignTechnicianDto.prototype, "technicianId", void 0);
 class DuplicateWorkOrderDto {
     scheduledAt;
     technicianId;

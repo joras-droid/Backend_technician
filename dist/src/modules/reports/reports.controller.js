@@ -25,26 +25,29 @@ let ReportsController = class ReportsController {
     constructor(reportsService) {
         this.reportsService = reportsService;
     }
-    async getWorkOrderReport(query) {
-        return this.reportsService.getWorkOrderReport(query);
+    async getWorkOrderReport(query, req) {
+        return this.reportsService.getWorkOrderReport(query, req.user.role);
     }
-    async getTimeSummary(query) {
-        return this.reportsService.getTimeSummary(query);
+    async getTimeSummary(query, req) {
+        return this.reportsService.getTimeSummary(query, req.user.role);
     }
-    async getMetrics(duration) {
+    async getMetrics(duration, req) {
         const validDurations = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
         const d = validDurations.includes(duration || '') ? duration : 'weekly';
-        return this.reportsService.getDashboardMetrics(d);
+        return this.reportsService.getDashboardMetrics(d, req.user.role);
     }
-    async getRecentActivity(limit) {
+    async getRecentActivity(limit, req) {
         const l = limit ? parseInt(limit, 10) : 20;
-        return this.reportsService.getRecentActivities(isNaN(l) ? 20 : l);
+        return this.reportsService.getRecentActivities(isNaN(l) ? 20 : l, req.user.role);
     }
-    async exportData(query, res) {
-        const result = await this.reportsService.exportData(query.type, query);
+    async exportData(query, res, req) {
+        const result = await this.reportsService.exportData(query.type, query, req.user.role);
         res.setHeader('Content-Type', result.contentType);
         res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
         res.send(result.data);
+    }
+    async getIndividualPerformance(userId, query, req) {
+        return this.reportsService.getIndividualPerformance(userId, query, req.user.role);
     }
 };
 exports.ReportsController = ReportsController;
@@ -68,8 +71,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
     (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getWorkOrderReport", null);
 __decorate([
@@ -89,8 +93,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
     (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getTimeSummary", null);
 __decorate([
@@ -113,8 +118,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
     (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
     __param(0, (0, common_1.Query)('duration')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getMetrics", null);
 __decorate([
@@ -132,8 +138,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
     (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
     __param(0, (0, common_1.Query)('limit')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getRecentActivity", null);
 __decorate([
@@ -146,7 +153,7 @@ __decorate([
     (0, swagger_1.ApiQuery)({
         name: 'type',
         required: true,
-        enum: ['work-orders', 'time-entries', 'clients', 'users'],
+        enum: ['work-orders', 'time-entries', 'clients', 'users', 'individual-performance'],
     }),
     (0, swagger_1.ApiQuery)({ name: 'startDate', required: false, type: String }),
     (0, swagger_1.ApiQuery)({ name: 'endDate', required: false, type: String }),
@@ -162,14 +169,45 @@ __decorate([
             },
         },
     }),
+    (0, swagger_1.ApiQuery)({ name: 'userId', required: false, type: String, description: 'Filter by user ID (for individual export)' }),
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
     (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin or Manager role required' }),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Res)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "exportData", null);
+__decorate([
+    (0, common_1.Get)('individual-performance/:userId'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Individual performance (Admin/Manager)',
+        description: 'Get performance charts, pie charts, and metrics for a specific user. Admin: Manager or Technician. Manager: Technician only.',
+    }),
+    (0, swagger_1.ApiParam)({ name: 'userId', description: 'User ID (Manager or Technician)' }),
+    (0, swagger_1.ApiQuery)({ name: 'startDate', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'endDate', required: false, type: String }),
+    (0, swagger_1.ApiQuery)({
+        name: 'duration',
+        required: false,
+        enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Individual performance with charts and metrics',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Manager cannot view Manager performance' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'User not found' }),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Query)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "getIndividualPerformance", null);
 exports.ReportsController = ReportsController = __decorate([
     (0, swagger_1.ApiTags)('reports'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

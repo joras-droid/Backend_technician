@@ -35,8 +35,8 @@ let AdminController = class AdminController {
     async whitelistEmails(dto) {
         return this.adminService.whitelistEmails(dto);
     }
-    async createEmployee(dto) {
-        return this.adminService.createEmployee(dto);
+    async createEmployee(dto, req) {
+        return this.adminService.createEmployee(dto, req.user.role);
     }
     async removeFromWhitelist(email) {
         return this.adminService.removeFromWhitelist(email);
@@ -140,10 +140,11 @@ __decorate([
     }),
     (0, swagger_1.ApiResponse)({ status: 409, description: 'Employee account already exists' }),
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
-    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Managers cannot create Admin or Manager roles' }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [admin_dto_1.CreateEmployeeDto]),
+    __metadata("design:paramtypes", [admin_dto_1.CreateEmployeeDto, Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "createEmployee", null);
 __decorate([

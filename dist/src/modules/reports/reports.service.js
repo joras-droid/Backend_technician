@@ -72,7 +72,19 @@ let ReportsService = class ReportsService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async getWorkOrderReport(query) {
+    async getAllowedTechnicianIds(callerRole) {
+        if (callerRole === client_1.UserRole.ADMIN)
+            return null;
+        if (callerRole === client_1.UserRole.MANAGER) {
+            const technicians = await this.prisma.user.findMany({
+                where: { role: client_1.UserRole.TECHNICIAN },
+                select: { id: true },
+            });
+            return technicians.map((u) => u.id);
+        }
+        return [];
+    }
+    async getWorkOrderReport(query, callerRole) {
         const { startDate, endDate, status, technicianId, clientId, groupBy, } = query;
         const where = {};
         if (startDate || endDate) {
@@ -92,6 +104,10 @@ let ReportsService = class ReportsService {
         }
         if (clientId) {
             where.clientId = clientId;
+        }
+        const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || client_1.UserRole.ADMIN);
+        if (allowedTechIds !== null) {
+            where.technicianId = { in: allowedTechIds };
         }
         const workOrders = await this.prisma.workOrder.findMany({
             where,
@@ -197,7 +213,7 @@ let ReportsService = class ReportsService {
             },
         };
     }
-    async getTimeSummary(query) {
+    async getTimeSummary(query, callerRole) {
         const { startDate, endDate, technicianId } = query;
         const where = {
             checkInAt: { not: null },
@@ -214,6 +230,15 @@ let ReportsService = class ReportsService {
         }
         if (technicianId) {
             where.technicianId = technicianId;
+        }
+        const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || client_1.UserRole.ADMIN);
+        if (allowedTechIds !== null) {
+            if (technicianId && !allowedTechIds.includes(technicianId)) {
+                where.technicianId = { in: [] };
+            }
+            else if (!technicianId) {
+                where.technicianId = { in: allowedTechIds };
+            }
         }
         const timeEntries = await this.prisma.timeEntry.findMany({
             where,
@@ -276,8 +301,8 @@ let ReportsService = class ReportsService {
             },
         };
     }
-    async exportData(type, query) {
-        const { startDate, endDate } = query;
+    async exportData(type, query, callerRole) {
+        const { startDate, endDate, userId } = query;
         const where = {};
         if (startDate || endDate) {
             where.createdAt = {};
@@ -288,8 +313,12 @@ let ReportsService = class ReportsService {
                 where.createdAt.lte = new Date(endDate);
             }
         }
+        const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || client_1.UserRole.ADMIN);
         switch (type) {
-            case 'work-orders':
+            case 'work-orders': {
+                if (allowedTechIds !== null) {
+                    where.technicianId = { in: allowedTechIds };
+                }
                 const workOrders = await this.prisma.workOrder.findMany({
                     where,
                     include: {
@@ -322,16 +351,237 @@ let ReportsService = class ReportsService {
                     filename: `work-orders-${new Date().toISOString().split('T')[0]}.csv`,
                     data: [csvHeaders.join(','), ...csvRows.map((row) => row.join(','))].join('\n'),
                 };
+            }
+            case 'individual-performance': {
+                if (!userId) {
+                    throw new Error('userId is required for individual-performance export');
+                }
+                const perfResult = await this.getIndividualPerformance(userId, { startDate, endDate }, callerRole || client_1.UserRole.ADMIN);
+                const user = perfResult.user;
+                const csvHeaders = [
+                    'metric',
+                    'value',
+                    'periodStart',
+                    'periodEnd',
+                ];
+                const csvRows = [
+                    ['workOrdersCompleted', perfResult.summary.workOrdersCompleted, startDate || '', endDate || ''],
+                    ['workOrdersTotal', perfResult.summary.workOrdersTotal, startDate || '', endDate || ''],
+                    ['totalHours', perfResult.summary.totalHours, startDate || '', endDate || ''],
+                    ['totalEarnings', perfResult.summary.totalEarnings, startDate || '', endDate || ''],
+                    ['avgHoursPerOrder', perfResult.summary.avgHoursPerOrder, startDate || '', endDate || ''],
+                    ['userName', `${user.firstName} ${user.lastName}`, '', ''],
+                    ['userRole', user.role, '', ''],
+                ];
+                return {
+                    contentType: 'text/csv',
+                    filename: `performance-${user.firstName}-${user.lastName}-${new Date().toISOString().split('T')[0]}.csv`,
+                    data: [csvHeaders.join(','), ...csvRows.map((row) => row.map(String).join(','))].join('\n'),
+                };
+            }
+            case 'time-entries': {
+                const teWhere = {
+                    checkInAt: { not: null },
+                    checkOutAt: { not: null },
+                };
+                if (startDate || endDate) {
+                    teWhere.checkInAt = teWhere.checkInAt || {};
+                    if (startDate)
+                        teWhere.checkInAt.gte = new Date(startDate);
+                    if (endDate)
+                        teWhere.checkInAt.lte = new Date(endDate);
+                }
+                if (userId) {
+                    if (allowedTechIds !== null && !allowedTechIds.includes(userId)) {
+                        teWhere.technicianId = { in: [] };
+                    }
+                    else {
+                        teWhere.technicianId = userId;
+                    }
+                }
+                else if (allowedTechIds !== null) {
+                    teWhere.technicianId = { in: allowedTechIds };
+                }
+                const timeEntries = await this.prisma.timeEntry.findMany({
+                    where: teWhere,
+                    include: {
+                        technician: { select: { firstName: true, lastName: true } },
+                        workOrder: { select: { workOrderNumber: true, payRate: true } },
+                    },
+                });
+                const teHeaders = ['workOrderNumber', 'technician', 'checkInAt', 'checkOutAt', 'hours', 'earnings'];
+                const teRows = timeEntries.map((te) => {
+                    const hours = te.checkInAt && te.checkOutAt
+                        ? (te.checkOutAt.getTime() - te.checkInAt.getTime()) / (1000 * 60 * 60)
+                        : 0;
+                    const earnings = te.workOrder?.payRate ? hours * te.workOrder.payRate : 0;
+                    return [
+                        te.workOrder?.workOrderNumber || '',
+                        te.technician ? `${te.technician.firstName} ${te.technician.lastName}` : '',
+                        te.checkInAt?.toISOString() || '',
+                        te.checkOutAt?.toISOString() || '',
+                        hours.toFixed(2),
+                        earnings.toFixed(2),
+                    ];
+                });
+                return {
+                    contentType: 'text/csv',
+                    filename: `time-entries-${new Date().toISOString().split('T')[0]}.csv`,
+                    data: [teHeaders.join(','), ...teRows.map((r) => r.join(','))].join('\n'),
+                };
+            }
             default:
                 throw new Error('Invalid export type');
         }
     }
-    async getDashboardMetrics(duration = 'weekly') {
+    async getIndividualPerformance(userId, query, callerRole) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+                profileImageUrl: true,
+            },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        if (callerRole === client_1.UserRole.MANAGER && user.role === client_1.UserRole.MANAGER) {
+            throw new common_1.ForbiddenException('Managers cannot view other Managers\' performance. Only Technicians.');
+        }
+        const { startDate, endDate, duration = 'monthly' } = query;
+        const start = startDate ? new Date(startDate) : new Date();
+        const end = endDate ? new Date(endDate) : new Date();
+        if (!startDate)
+            start.setMonth(start.getMonth() - 1);
+        const workOrders = await this.prisma.workOrder.findMany({
+            where: {
+                technicianId: userId,
+                ...(startDate || endDate
+                    ? {
+                        scheduledAt: {
+                            ...(startDate && { gte: start }),
+                            ...(endDate && { lte: end }),
+                        },
+                    }
+                    : {}),
+            },
+            include: {
+                timeEntries: {
+                    where: { checkInAt: { not: null }, checkOutAt: { not: null } },
+                },
+            },
+        });
+        const timeEntries = await this.prisma.timeEntry.findMany({
+            where: {
+                technicianId: userId,
+                checkInAt: { not: null },
+                checkOutAt: { not: null },
+                ...(startDate || endDate
+                    ? {
+                        checkInAt: {
+                            ...(startDate && { gte: start }),
+                            ...(endDate && { lte: end }),
+                        },
+                    }
+                    : {}),
+            },
+            include: {
+                workOrder: { select: { payRate: true } },
+            },
+        });
+        let totalHours = 0;
+        let totalEarnings = 0;
+        timeEntries.forEach((te) => {
+            if (te.checkInAt && te.checkOutAt) {
+                const hours = (te.checkOutAt.getTime() - te.checkInAt.getTime()) / (1000 * 60 * 60);
+                totalHours += hours;
+                if (te.workOrder?.payRate) {
+                    totalEarnings += hours * te.workOrder.payRate;
+                }
+            }
+        });
+        const completedCount = workOrders.filter((w) => w.status === 'COMPLETED').length;
+        const activeCount = workOrders.filter((w) => w.status === 'ACTIVE').length;
+        const paidCount = workOrders.filter((w) => w.status === 'PAID').length;
+        const statusPieData = [
+            { label: 'Completed', value: completedCount, color: '#10B981' },
+            { label: 'Active', value: activeCount, color: '#F59E0B' },
+            { label: 'Paid', value: paidCount, color: '#2563eb' },
+        ].filter((d) => d.value > 0);
+        const labels = duration === 'weekly'
+            ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            : duration === 'monthly'
+                ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+                : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const completedByPeriod = new Array(labels.length).fill(0);
+        workOrders.forEach((wo) => {
+            const d = wo.scheduledAt;
+            const idx = duration === 'weekly'
+                ? d.getDay() === 0
+                    ? 6
+                    : d.getDay() - 1
+                : duration === 'monthly'
+                    ? Math.min(3, Math.floor(d.getDate() / 8))
+                    : d.getMonth();
+            if (wo.status === 'COMPLETED') {
+                completedByPeriod[Math.min(idx, labels.length - 1)]++;
+            }
+        });
+        return {
+            user: {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+                profileImageUrl: user.profileImageUrl,
+            },
+            summary: {
+                workOrdersTotal: workOrders.length,
+                workOrdersCompleted: completedCount,
+                workOrdersActive: activeCount,
+                workOrdersPaid: paidCount,
+                totalHours: parseFloat(totalHours.toFixed(2)),
+                totalEarnings: parseFloat(totalEarnings.toFixed(2)),
+                avgHoursPerOrder: workOrders.length > 0
+                    ? parseFloat((totalHours / workOrders.length).toFixed(2))
+                    : 0,
+            },
+            lineChart: {
+                labels,
+                datasets: [
+                    { label: 'Completed', data: completedByPeriod },
+                ],
+            },
+            pieChart: {
+                byStatus: statusPieData,
+            },
+            period: {
+                startDate: start,
+                endDate: end,
+            },
+        };
+    }
+    async getDashboardMetrics(duration = 'weekly', callerRole) {
         const { start, end } = getDateRange(duration);
         const labels = getChartLabels(duration);
+        const woWhere = { createdAt: { gte: start, lte: end } };
+        const teWhere = {
+            checkInAt: { not: null, gte: start, lte: end },
+            checkOutAt: { not: null },
+        };
+        const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || client_1.UserRole.ADMIN);
+        if (allowedTechIds !== null) {
+            woWhere.technicianId = { in: allowedTechIds };
+            teWhere.technicianId = { in: allowedTechIds };
+        }
         const [workOrders, users, equipment, timeEntries] = await Promise.all([
             this.prisma.workOrder.findMany({
-                where: { createdAt: { gte: start, lte: end } },
+                where: woWhere,
                 include: {
                     timeEntries: {
                         where: { checkInAt: { not: null }, checkOutAt: { not: null } },
@@ -339,15 +589,12 @@ let ReportsService = class ReportsService {
                 },
             }),
             this.prisma.user.findMany({
-                where: { role: client_1.UserRole.TECHNICIAN },
+                where: { role: client_1.UserRole.TECHNICIAN, ...(allowedTechIds ? { id: { in: allowedTechIds } } : {}) },
                 select: { id: true },
             }),
             this.prisma.equipment.count({ where: { isActive: true } }),
             this.prisma.timeEntry.findMany({
-                where: {
-                    checkInAt: { not: null, gte: start, lte: end },
-                    checkOutAt: { not: null },
-                },
+                where: teWhere,
                 include: {
                     workOrder: { select: { id: true, scheduledAt: true } },
                 },
@@ -522,13 +769,24 @@ let ReportsService = class ReportsService {
             },
         };
     }
-    async getRecentActivities(limit = 20) {
+    async getRecentActivities(limit = 20, callerRole) {
         const activities = [];
         const since = new Date();
         since.setDate(since.getDate() - 7);
+        const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || client_1.UserRole.ADMIN);
+        const woWhere = { updatedAt: { gte: since } };
+        const userWhere = { createdAt: { gte: since } };
+        if (allowedTechIds !== null) {
+            woWhere.technicianId = { in: allowedTechIds };
+            userWhere.role = client_1.UserRole.TECHNICIAN;
+            userWhere.id = { in: allowedTechIds };
+        }
+        else {
+            userWhere.role = { in: [client_1.UserRole.TECHNICIAN, client_1.UserRole.MANAGER] };
+        }
         const [workOrders, newUsers, timeEntryEdits, equipmentApprovals] = await Promise.all([
             this.prisma.workOrder.findMany({
-                where: { updatedAt: { gte: since } },
+                where: woWhere,
                 orderBy: { updatedAt: 'desc' },
                 take: limit,
                 include: {
@@ -544,7 +802,7 @@ let ReportsService = class ReportsService {
                 },
             }),
             this.prisma.user.findMany({
-                where: { createdAt: { gte: since }, role: client_1.UserRole.TECHNICIAN },
+                where: userWhere,
                 orderBy: { createdAt: 'desc' },
                 take: 5,
                 select: {

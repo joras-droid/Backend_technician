@@ -366,6 +366,94 @@ export declare class WorkOrdersService {
         beforeWorkPhotos: string[];
         afterWorkPhotos: string[];
     }>;
+    assignTechnician(workOrderId: string, technicianId: string, callerId: string, callerRole: string): Promise<{
+        client: {
+            id: string;
+            email: string | null;
+            phone: string | null;
+            name: string;
+        } | null;
+        equipment: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            workOrderId: string;
+            quantity: number;
+            cost: number;
+            vendor: string | null;
+            equipmentId: string | null;
+            receiptUrl: string | null;
+            isCustom: boolean;
+            approvalStatus: import(".prisma/client").$Enums.EquipmentApprovalStatus;
+            approvedAt: Date | null;
+            rejectionReason: string | null;
+            addedByTechnicianId: string | null;
+            approvedById: string | null;
+        }[];
+        technician: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone: string | null;
+            address: string | null;
+            username: string;
+            password: string;
+            role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl: string | null;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone: string | null;
+            address: string | null;
+            username: string;
+            password: string;
+            role: import(".prisma/client").$Enums.UserRole;
+            profileImageUrl: string | null;
+            whitelisted: boolean;
+            defaultPayRate: number | null;
+        } | null;
+        attachments: {
+            id: string;
+            createdAt: Date;
+            workOrderId: string;
+            url: string;
+            type: string | null;
+            description: string | null;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        notes: string | null;
+        tasks: string | null;
+        workOrderNumber: string;
+        scheduledAt: Date;
+        estimatedHours: number | null;
+        payRate: number | null;
+        facilityName: string;
+        facilityAddress: string;
+        pointOfContact: string | null;
+        status: import(".prisma/client").$Enums.WorkOrderStatus;
+        invoiceNumber: string | null;
+        clientId: string | null;
+        technicianId: string | null;
+        templateId: string | null;
+        flatRate: number | null;
+        facilityLat: number | null;
+        facilityLng: number | null;
+        beforeWorkPhotos: string[];
+        afterWorkPhotos: string[];
+    }>;
     update(id: string, dto: UpdateWorkOrderDto, userId: string, userRole?: string): Promise<{
         timeEntries: ({
             technician: {

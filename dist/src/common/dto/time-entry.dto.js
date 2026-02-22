@@ -47,24 +47,26 @@ class CheckOutDto {
 }
 exports.CheckOutDto = CheckOutDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({
+    (0, swagger_1.ApiPropertyOptional)({
         example: 40.7128,
-        description: 'GPS latitude',
+        description: 'GPS latitude (required for Technician; optional for Admin/Manager super user)',
         minimum: -90,
         maximum: 90,
     }),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(-90),
     (0, class_validator_1.Max)(90),
     __metadata("design:type", Number)
 ], CheckOutDto.prototype, "checkOutLat", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({
+    (0, swagger_1.ApiPropertyOptional)({
         example: -74.0060,
-        description: 'GPS longitude',
+        description: 'GPS longitude (required for Technician; optional for Admin/Manager super user)',
         minimum: -180,
         maximum: 180,
     }),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(-180),
     (0, class_validator_1.Max)(180),

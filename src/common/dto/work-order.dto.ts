@@ -143,6 +143,15 @@ export class CreateWorkOrderDto {
   equipment?: CreateWorkOrderEquipmentDto[];
 }
 
+export class AssignTechnicianDto {
+  @ApiProperty({
+    example: 'clx1234567890',
+    description: 'Technician user ID to assign. Technicians can only assign themselves (use own userId).',
+  })
+  @IsString()
+  technicianId: string;
+}
+
 export class DuplicateWorkOrderDto {
   @ApiPropertyOptional({
     example: '2026-02-15T09:00:00.000Z',

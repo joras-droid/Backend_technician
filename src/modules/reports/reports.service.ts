@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WorkOrderStatus, UserRole } from '@prisma/client';
 
@@ -60,7 +64,20 @@ function formatTimeAgo(date: Date): string {
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getWorkOrderReport(query: any) {
+  /** Get allowed technician IDs for Manager (only TECHNICIAN); Admin sees all */
+  private async getAllowedTechnicianIds(callerRole: string): Promise<string[] | null> {
+    if (callerRole === UserRole.ADMIN) return null; // No filter
+    if (callerRole === UserRole.MANAGER) {
+      const technicians = await this.prisma.user.findMany({
+        where: { role: UserRole.TECHNICIAN },
+        select: { id: true },
+      });
+      return technicians.map((u) => u.id);
+    }
+    return [];
+  }
+
+  async getWorkOrderReport(query: any, callerRole?: string) {
     const {
       startDate,
       endDate,
@@ -92,6 +109,12 @@ export class ReportsService {
 
     if (clientId) {
       where.clientId = clientId;
+    }
+
+    // Manager: only work orders assigned to technicians
+    const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || UserRole.ADMIN);
+    if (allowedTechIds !== null) {
+      where.technicianId = { in: allowedTechIds };
     }
 
     const workOrders = await this.prisma.workOrder.findMany({
@@ -211,7 +234,7 @@ export class ReportsService {
     };
   }
 
-  async getTimeSummary(query: any) {
+  async getTimeSummary(query: any, callerRole?: string) {
     const { startDate, endDate, technicianId } = query;
 
     const where: any = {
@@ -231,6 +254,16 @@ export class ReportsService {
 
     if (technicianId) {
       where.technicianId = technicianId;
+    }
+
+    // Manager: only technicians' time entries
+    const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || UserRole.ADMIN);
+    if (allowedTechIds !== null) {
+      if (technicianId && !allowedTechIds.includes(technicianId)) {
+        where.technicianId = { in: [] }; // Manager cannot view this user
+      } else if (!technicianId) {
+        where.technicianId = { in: allowedTechIds };
+      }
     }
 
     const timeEntries = await this.prisma.timeEntry.findMany({
@@ -306,10 +339,8 @@ export class ReportsService {
     };
   }
 
-  async exportData(type: string, query: any) {
-    // This is a simplified implementation
-    // In production, use a library like csv-writer or exceljs
-    const { startDate, endDate } = query;
+  async exportData(type: string, query: any, callerRole?: string) {
+    const { startDate, endDate, userId } = query;
 
     const where: any = {};
     if (startDate || endDate) {
@@ -322,8 +353,13 @@ export class ReportsService {
       }
     }
 
+    const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || UserRole.ADMIN);
+
     switch (type) {
-      case 'work-orders':
+      case 'work-orders': {
+        if (allowedTechIds !== null) {
+          where.technicianId = { in: allowedTechIds };
+        }
         const workOrders = await this.prisma.workOrder.findMany({
           where,
           include: {
@@ -359,6 +395,87 @@ export class ReportsService {
           filename: `work-orders-${new Date().toISOString().split('T')[0]}.csv`,
           data: [csvHeaders.join(','), ...csvRows.map((row) => row.join(','))].join('\n'),
         };
+      }
+
+      case 'individual-performance': {
+        if (!userId) {
+          throw new Error('userId is required for individual-performance export');
+        }
+        const perfResult = await this.getIndividualPerformance(
+          userId,
+          { startDate, endDate },
+          callerRole || UserRole.ADMIN,
+        );
+        const user = perfResult.user;
+        const csvHeaders = [
+          'metric',
+          'value',
+          'periodStart',
+          'periodEnd',
+        ];
+        const csvRows = [
+          ['workOrdersCompleted', perfResult.summary.workOrdersCompleted, startDate || '', endDate || ''],
+          ['workOrdersTotal', perfResult.summary.workOrdersTotal, startDate || '', endDate || ''],
+          ['totalHours', perfResult.summary.totalHours, startDate || '', endDate || ''],
+          ['totalEarnings', perfResult.summary.totalEarnings, startDate || '', endDate || ''],
+          ['avgHoursPerOrder', perfResult.summary.avgHoursPerOrder, startDate || '', endDate || ''],
+          ['userName', `${user.firstName} ${user.lastName}`, '', ''],
+          ['userRole', user.role, '', ''],
+        ];
+        return {
+          contentType: 'text/csv',
+          filename: `performance-${user.firstName}-${user.lastName}-${new Date().toISOString().split('T')[0]}.csv`,
+          data: [csvHeaders.join(','), ...csvRows.map((row) => row.map(String).join(','))].join('\n'),
+        };
+      }
+
+      case 'time-entries': {
+        const teWhere: any = {
+          checkInAt: { not: null },
+          checkOutAt: { not: null },
+        };
+        if (startDate || endDate) {
+          teWhere.checkInAt = teWhere.checkInAt || {};
+          if (startDate) teWhere.checkInAt.gte = new Date(startDate);
+          if (endDate) teWhere.checkInAt.lte = new Date(endDate);
+        }
+        if (userId) {
+          if (allowedTechIds !== null && !allowedTechIds.includes(userId)) {
+            teWhere.technicianId = { in: [] };
+          } else {
+            teWhere.technicianId = userId;
+          }
+        } else if (allowedTechIds !== null) {
+          teWhere.technicianId = { in: allowedTechIds };
+        }
+        const timeEntries = await this.prisma.timeEntry.findMany({
+          where: teWhere,
+          include: {
+            technician: { select: { firstName: true, lastName: true } },
+            workOrder: { select: { workOrderNumber: true, payRate: true } },
+          },
+        });
+        const teHeaders = ['workOrderNumber', 'technician', 'checkInAt', 'checkOutAt', 'hours', 'earnings'];
+        const teRows = timeEntries.map((te) => {
+          const hours = te.checkInAt && te.checkOutAt
+            ? (te.checkOutAt.getTime() - te.checkInAt.getTime()) / (1000 * 60 * 60)
+            : 0;
+          const earnings = te.workOrder?.payRate ? hours * te.workOrder.payRate : 0;
+          return [
+            te.workOrder?.workOrderNumber || '',
+            te.technician ? `${te.technician.firstName} ${te.technician.lastName}` : '',
+            te.checkInAt?.toISOString() || '',
+            te.checkOutAt?.toISOString() || '',
+            hours.toFixed(2),
+            earnings.toFixed(2),
+          ];
+        });
+        return {
+          contentType: 'text/csv',
+          filename: `time-entries-${new Date().toISOString().split('T')[0]}.csv`,
+          data: [teHeaders.join(','), ...teRows.map((r) => r.join(','))].join('\n'),
+        };
+      }
 
       default:
         throw new Error('Invalid export type');
@@ -366,15 +483,183 @@ export class ReportsService {
   }
 
   /**
+   * Get individual performance for a user (charts, pie charts, metrics).
+   * Admin: can view Manager or Technician. Manager: can only view Technician.
+   */
+  async getIndividualPerformance(
+    userId: string,
+    query: any,
+    callerRole?: string,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        profileImageUrl: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (callerRole === UserRole.MANAGER && user.role === UserRole.MANAGER) {
+      throw new ForbiddenException(
+        'Managers cannot view other Managers\' performance. Only Technicians.',
+      );
+    }
+
+    const { startDate, endDate, duration = 'monthly' } = query;
+    const start = startDate ? new Date(startDate) : new Date();
+    const end = endDate ? new Date(endDate) : new Date();
+    if (!startDate) start.setMonth(start.getMonth() - 1);
+
+    const workOrders = await this.prisma.workOrder.findMany({
+      where: {
+        technicianId: userId,
+        ...(startDate || endDate
+          ? {
+              scheduledAt: {
+                ...(startDate && { gte: start }),
+                ...(endDate && { lte: end }),
+              },
+            }
+          : {}),
+      },
+      include: {
+        timeEntries: {
+          where: { checkInAt: { not: null }, checkOutAt: { not: null } },
+        },
+      },
+    });
+
+    const timeEntries = await this.prisma.timeEntry.findMany({
+      where: {
+        technicianId: userId,
+        checkInAt: { not: null },
+        checkOutAt: { not: null },
+        ...(startDate || endDate
+          ? {
+              checkInAt: {
+                ...(startDate && { gte: start }),
+                ...(endDate && { lte: end }),
+              },
+            }
+          : {}),
+      },
+      include: {
+        workOrder: { select: { payRate: true } },
+      },
+    });
+
+    let totalHours = 0;
+    let totalEarnings = 0;
+    timeEntries.forEach((te) => {
+      if (te.checkInAt && te.checkOutAt) {
+        const hours =
+          (te.checkOutAt.getTime() - te.checkInAt.getTime()) / (1000 * 60 * 60);
+        totalHours += hours;
+        if (te.workOrder?.payRate) {
+          totalEarnings += hours * te.workOrder.payRate;
+        }
+      }
+    });
+
+    const completedCount = workOrders.filter((w) => w.status === 'COMPLETED').length;
+    const activeCount = workOrders.filter((w) => w.status === 'ACTIVE').length;
+    const paidCount = workOrders.filter((w) => w.status === 'PAID').length;
+
+    const statusPieData = [
+      { label: 'Completed', value: completedCount, color: '#10B981' },
+      { label: 'Active', value: activeCount, color: '#F59E0B' },
+      { label: 'Paid', value: paidCount, color: '#2563eb' },
+    ].filter((d) => d.value > 0);
+
+    const labels =
+      duration === 'weekly'
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : duration === 'monthly'
+          ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+          : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const completedByPeriod = new Array(labels.length).fill(0);
+    workOrders.forEach((wo) => {
+      const d = wo.scheduledAt;
+      const idx =
+        duration === 'weekly'
+          ? d.getDay() === 0
+            ? 6
+            : d.getDay() - 1
+          : duration === 'monthly'
+            ? Math.min(3, Math.floor(d.getDate() / 8))
+            : d.getMonth();
+      if (wo.status === 'COMPLETED') {
+        completedByPeriod[Math.min(idx, labels.length - 1)]++;
+      }
+    });
+
+    return {
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        profileImageUrl: user.profileImageUrl,
+      },
+      summary: {
+        workOrdersTotal: workOrders.length,
+        workOrdersCompleted: completedCount,
+        workOrdersActive: activeCount,
+        workOrdersPaid: paidCount,
+        totalHours: parseFloat(totalHours.toFixed(2)),
+        totalEarnings: parseFloat(totalEarnings.toFixed(2)),
+        avgHoursPerOrder:
+          workOrders.length > 0
+            ? parseFloat((totalHours / workOrders.length).toFixed(2))
+            : 0,
+      },
+      lineChart: {
+        labels,
+        datasets: [
+          { label: 'Completed', data: completedByPeriod },
+        ],
+      },
+      pieChart: {
+        byStatus: statusPieData,
+      },
+      period: {
+        startDate: start,
+        endDate: end,
+      },
+    };
+  }
+
+  /**
    * Get dashboard metrics with duration filter (weekly, monthly, etc.)
    */
-  async getDashboardMetrics(duration: DurationType = 'weekly') {
+  async getDashboardMetrics(duration: DurationType = 'weekly', callerRole?: string) {
     const { start, end } = getDateRange(duration);
     const labels = getChartLabels(duration);
 
+    const woWhere: any = { createdAt: { gte: start, lte: end } };
+    const teWhere: any = {
+      checkInAt: { not: null, gte: start, lte: end },
+      checkOutAt: { not: null },
+    };
+    const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || UserRole.ADMIN);
+    if (allowedTechIds !== null) {
+      woWhere.technicianId = { in: allowedTechIds };
+      teWhere.technicianId = { in: allowedTechIds };
+    }
+
     const [workOrders, users, equipment, timeEntries] = await Promise.all([
       this.prisma.workOrder.findMany({
-        where: { createdAt: { gte: start, lte: end } },
+        where: woWhere,
         include: {
           timeEntries: {
             where: { checkInAt: { not: null }, checkOutAt: { not: null } },
@@ -382,15 +667,12 @@ export class ReportsService {
         },
       }),
       this.prisma.user.findMany({
-        where: { role: UserRole.TECHNICIAN },
+        where: { role: UserRole.TECHNICIAN, ...(allowedTechIds ? { id: { in: allowedTechIds } } : {}) },
         select: { id: true },
       }),
       this.prisma.equipment.count({ where: { isActive: true } }),
       this.prisma.timeEntry.findMany({
-        where: {
-          checkInAt: { not: null, gte: start, lte: end },
-          checkOutAt: { not: null },
-        },
+        where: teWhere,
         include: {
           workOrder: { select: { id: true, scheduledAt: true } },
         },
@@ -574,16 +856,27 @@ export class ReportsService {
 
   /**
    * Get recent activities for admin and manager
-   * Shows major activities of technicians and managers
+   * Admin: technicians and managers. Manager: technicians only.
    */
-  async getRecentActivities(limit = 20) {
+  async getRecentActivities(limit = 20, callerRole?: string) {
     const activities: any[] = [];
     const since = new Date();
     since.setDate(since.getDate() - 7);
 
+    const allowedTechIds = await this.getAllowedTechnicianIds(callerRole || UserRole.ADMIN);
+    const woWhere: any = { updatedAt: { gte: since } };
+    const userWhere: any = { createdAt: { gte: since } };
+    if (allowedTechIds !== null) {
+      woWhere.technicianId = { in: allowedTechIds };
+      userWhere.role = UserRole.TECHNICIAN;
+      userWhere.id = { in: allowedTechIds };
+    } else {
+      userWhere.role = { in: [UserRole.TECHNICIAN, UserRole.MANAGER] };
+    }
+
     const [workOrders, newUsers, timeEntryEdits, equipmentApprovals] = await Promise.all([
       this.prisma.workOrder.findMany({
-        where: { updatedAt: { gte: since } },
+        where: woWhere,
         orderBy: { updatedAt: 'desc' },
         take: limit,
         include: {
@@ -599,7 +892,7 @@ export class ReportsService {
         },
       }),
       this.prisma.user.findMany({
-        where: { createdAt: { gte: since }, role: UserRole.TECHNICIAN },
+        where: userWhere,
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {

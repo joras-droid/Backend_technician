@@ -22,7 +22,7 @@ export declare class TimeEntriesService {
         checkOutLat: number | null;
         checkOutLng: number | null;
     }>;
-    checkOut(workOrderId: string, technicianId: string, dto: CheckOutDto): Promise<{
+    checkOut(workOrderId: string, callerId: string, callerRole: string, dto: CheckOutDto): Promise<{
         totalHours: number;
         technician: {
             id: string;

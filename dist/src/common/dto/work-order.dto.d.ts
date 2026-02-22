@@ -25,6 +25,9 @@ export declare class CreateWorkOrderDto {
     templateId?: string;
     equipment?: CreateWorkOrderEquipmentDto[];
 }
+export declare class AssignTechnicianDto {
+    technicianId: string;
+}
 export declare class DuplicateWorkOrderDto {
     scheduledAt?: string;
     technicianId?: string;

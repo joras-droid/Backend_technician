@@ -42,6 +42,9 @@ let WorkOrdersController = class WorkOrdersController {
     async create(dto, req) {
         return this.workOrdersService.create(dto, req.user.id);
     }
+    async assignTechnician(id, dto, req) {
+        return this.workOrdersService.assignTechnician(id, dto.technicianId, req.user.id, req.user.role);
+    }
     async update(id, dto, req) {
         return this.workOrdersService.update(id, dto, req.user.id, req.user.role);
     }
@@ -224,6 +227,28 @@ __decorate([
     __metadata("design:paramtypes", [work_order_dto_1.CreateWorkOrderDto, Object]),
     __metadata("design:returntype", Promise)
 ], WorkOrdersController.prototype, "create", null);
+__decorate([
+    (0, common_1.Patch)(':id/assign'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.MANAGER, client_1.UserRole.TECHNICIAN),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Assign technician to work order',
+        description: 'Admin/Manager: assign any technician. Technician: assign themselves to an unassigned work order.',
+    }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Work order ID', example: 'clx1234567890' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Technician assigned successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Technician can only self-assign to unassigned work orders' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Work order or technician not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, work_order_dto_1.AssignTechnicianDto, Object]),
+    __metadata("design:returntype", Promise)
+], WorkOrdersController.prototype, "assignTechnician", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),

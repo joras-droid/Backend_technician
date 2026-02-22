@@ -71,11 +71,12 @@ export class TimeEntriesController {
 
   @Post('check-out')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.TECHNICIAN)
+  @Roles(UserRole.TECHNICIAN, UserRole.ADMIN, UserRole.MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Check out (Technician)',
-    description: 'Record check-out time and location for a work order',
+    summary: 'Check out',
+    description:
+      'Record check-out time and location. Technicians must provide location. Admin/Manager can check out without location (super user).',
   })
   @ApiParam({
     name: 'workOrderId',
@@ -98,6 +99,7 @@ export class TimeEntriesController {
     return this.timeEntriesService.checkOut(
       workOrderId,
       req.user.id,
+      req.user.role,
       dto,
     );
   }

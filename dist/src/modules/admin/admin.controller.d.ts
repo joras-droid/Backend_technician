@@ -1,5 +1,6 @@
 import { AdminService } from './admin.service';
 import { CreateEmployeeDto, WhitelistEmailDto, WhitelistEmailsDto } from '../../common/dto/admin.dto';
+import { AuthenticatedRequest } from '../../common/interfaces/request.interface';
 export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
@@ -45,7 +46,7 @@ export declare class AdminController {
         error: any;
         data?: undefined;
     })[]>;
-    createEmployee(dto: CreateEmployeeDto): Promise<{
+    createEmployee(dto: CreateEmployeeDto, req: AuthenticatedRequest): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;

@@ -47,7 +47,7 @@ export declare class AdminService {
         error: any;
         data?: undefined;
     })[]>;
-    createEmployee(dto: CreateEmployeeDto): Promise<{
+    createEmployee(dto: CreateEmployeeDto, callerRole?: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;

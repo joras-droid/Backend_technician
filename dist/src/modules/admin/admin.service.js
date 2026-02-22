@@ -169,8 +169,14 @@ let AdminService = class AdminService {
         }
         return results;
     }
-    async createEmployee(dto) {
+    async createEmployee(dto, callerRole) {
         const { password, email, payRate, defaultPayRate, ...rest } = dto;
+        const requestedRole = rest.role || client_1.UserRole.TECHNICIAN;
+        if (callerRole === client_1.UserRole.MANAGER) {
+            if (requestedRole === client_1.UserRole.ADMIN || requestedRole === client_1.UserRole.MANAGER) {
+                throw new common_1.ForbiddenException('Managers can only create Technician accounts. Cannot create Admin or Manager.');
+            }
+        }
         const effectivePayRate = defaultPayRate ?? payRate;
         const existingUser = await this.prisma.user.findUnique({
             where: { email },

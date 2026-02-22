@@ -5,6 +5,7 @@ import {
   Delete,
   Body,
   Param,
+  Request,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -27,6 +28,7 @@ import {
   WhitelistEmailsDto,
   EmployeeResponseDto,
 } from '../../common/dto/admin.dto';
+import { AuthenticatedRequest } from '../../common/interfaces/request.interface';
 
 @ApiTags('admin')
 @ApiBearerAuth('JWT-auth')
@@ -127,9 +129,12 @@ export class AdminController {
   })
   @ApiResponse({ status: 409, description: 'Employee account already exists' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
-  async createEmployee(@Body() dto: CreateEmployeeDto) {
-    return this.adminService.createEmployee(dto);
+  @ApiResponse({ status: 403, description: 'Forbidden - Managers cannot create Admin or Manager roles' })
+  async createEmployee(
+    @Body() dto: CreateEmployeeDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.adminService.createEmployee(dto, req.user.role);
   }
 
   @Delete('employees/whitelist/:email')

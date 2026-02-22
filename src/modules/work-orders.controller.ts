@@ -33,6 +33,7 @@ import {
   CreateWorkOrderDto,
   UpdateWorkOrderDto,
   DuplicateWorkOrderDto,
+  AssignTechnicianDto,
 } from '../common/dto/work-order.dto';
 import { PresignedUrlResponseDto } from '../common/dto/auth.dto';
 import { AuthenticatedRequest } from '../common/interfaces/request.interface';
@@ -188,6 +189,34 @@ export class WorkOrdersController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.workOrdersService.create(dto, req.user.id);
+  }
+
+  @Patch(':id/assign')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.TECHNICIAN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Assign technician to work order',
+    description:
+      'Admin/Manager: assign any technician. Technician: assign themselves to an unassigned work order.',
+  })
+  @ApiParam({ name: 'id', description: 'Work order ID', example: 'clx1234567890' })
+  @ApiResponse({ status: 200, description: 'Technician assigned successfully' })
+  @ApiResponse({ status: 400, description: 'Technician can only self-assign to unassigned work orders' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Work order or technician not found' })
+  async assignTechnician(
+    @Param('id') id: string,
+    @Body() dto: AssignTechnicianDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.workOrdersService.assignTechnician(
+      id,
+      dto.technicianId,
+      req.user.id,
+      req.user.role,
+    );
   }
 
   @Patch(':id')

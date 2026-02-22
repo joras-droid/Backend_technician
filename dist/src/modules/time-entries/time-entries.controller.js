@@ -30,7 +30,7 @@ let TimeEntriesController = class TimeEntriesController {
         return this.timeEntriesService.checkIn(workOrderId, req.user.id, dto);
     }
     async checkOut(workOrderId, dto, req) {
-        return this.timeEntriesService.checkOut(workOrderId, req.user.id, dto);
+        return this.timeEntriesService.checkOut(workOrderId, req.user.id, req.user.role, dto);
     }
     async findAll(workOrderId) {
         return this.timeEntriesService.findAllForWorkOrder(workOrderId);
@@ -69,11 +69,11 @@ __decorate([
 __decorate([
     (0, common_1.Post)('check-out'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(client_1.UserRole.TECHNICIAN),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.TECHNICIAN, client_1.UserRole.ADMIN, client_1.UserRole.MANAGER),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
-        summary: 'Check out (Technician)',
-        description: 'Record check-out time and location for a work order',
+        summary: 'Check out',
+        description: 'Record check-out time and location. Technicians must provide location. Admin/Manager can check out without location (super user).',
     }),
     (0, swagger_1.ApiParam)({
         name: 'workOrderId',

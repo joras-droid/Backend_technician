@@ -3,8 +3,8 @@ export declare class CheckInDto {
     checkInLng: number;
 }
 export declare class CheckOutDto {
-    checkOutLat: number;
-    checkOutLng: number;
+    checkOutLat?: number;
+    checkOutLng?: number;
 }
 export declare class EditTimeEntryDto {
     checkInAt?: string;

@@ -104,15 +104,48 @@ export class TimeEntriesService {
     return timeEntry;
   }
 
-  async checkOut(workOrderId: string, technicianId: string, dto: CheckOutDto) {
-    // Find active time entry
+  async checkOut(
+    workOrderId: string,
+    callerId: string,
+    callerRole: string,
+    dto: CheckOutDto,
+  ) {
+    const isAdminOrManager =
+      callerRole === 'ADMIN' || callerRole === 'MANAGER';
+
+    // Technicians must provide location; Admin/Manager can check out without it
+    if (!isAdminOrManager && (dto.checkOutLat == null || dto.checkOutLng == null)) {
+      throw new BadRequestException(
+        'Technicians must provide check-out location (checkOutLat and checkOutLng)',
+      );
+    }
+
+    // For Admin/Manager: find active time entry for the work order (any technician)
+    // For Technician: find their own active time entry
+    const whereClause: any = {
+      workOrderId,
+      checkInAt: { not: null },
+      checkOutAt: null,
+    };
+
+    if (isAdminOrManager) {
+      // Get the technician assigned to this work order
+      const workOrder = await this.prisma.workOrder.findUnique({
+        where: { id: workOrderId },
+      });
+      if (!workOrder) {
+        throw new NotFoundException('Work order not found');
+      }
+      if (!workOrder.technicianId) {
+        throw new BadRequestException('Work order has no assigned technician');
+      }
+      whereClause.technicianId = workOrder.technicianId;
+    } else {
+      whereClause.technicianId = callerId;
+    }
+
     const timeEntry = await this.prisma.timeEntry.findFirst({
-      where: {
-        workOrderId,
-        technicianId,
-        checkInAt: { not: null },
-        checkOutAt: null,
-      },
+      where: whereClause,
     });
 
     if (!timeEntry) {
@@ -125,8 +158,8 @@ export class TimeEntriesService {
       where: { id: timeEntry.id },
       data: {
         checkOutAt,
-        checkOutLat: dto.checkOutLat,
-        checkOutLng: dto.checkOutLng,
+        checkOutLat: dto.checkOutLat ?? null,
+        checkOutLng: dto.checkOutLng ?? null,
       },
       include: {
         technician: {
