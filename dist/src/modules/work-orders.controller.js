@@ -95,7 +95,7 @@ __decorate([
     (0, swagger_1.ApiQuery)({
         name: 'sortBy',
         required: false,
-        enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+        enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber', 'status'],
     }),
     (0, swagger_1.ApiQuery)({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] }),
     (0, swagger_1.ApiResponse)({

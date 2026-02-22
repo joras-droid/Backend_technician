@@ -76,6 +76,7 @@ model WorkOrder {
   scheduledAt     DateTime
   estimatedHours  Float?
   payRate         Float?
+  flatRate        Float?
 
   facilityName    String
   facilityAddress String

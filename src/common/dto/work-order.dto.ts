@@ -63,10 +63,17 @@ export class CreateWorkOrderDto {
   @Min(0)
   estimatedHours?: number;
 
+  @ApiPropertyOptional({ example: 25.5, description: 'Hourly pay rate', minimum: 0 })
   @IsOptional()
   @IsNumber()
   @Min(0)
   payRate?: number;
+
+  @ApiPropertyOptional({ example: 150, description: 'Flat rate for the work order', minimum: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  flatRate?: number;
 
   @IsString()
   facilityName: string;
@@ -153,6 +160,11 @@ export class UpdateWorkOrderDto {
   @IsNumber()
   @Min(0)
   payRate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  flatRate?: number;
 
   @IsOptional()
   @IsString()
@@ -338,14 +350,14 @@ export class ListWorkOrdersQueryDto {
   limit?: number;
 
   @ApiPropertyOptional({
-    enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+    enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber', 'status'],
     example: 'scheduledAt',
     description: 'Sort field',
     default: 'scheduledAt',
   })
   @IsOptional()
-  @IsEnum(['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'])
-  sortBy?: 'scheduledAt' | 'createdAt' | 'updatedAt' | 'workOrderNumber';
+  @IsEnum(['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber', 'status'])
+  sortBy?: 'scheduledAt' | 'createdAt' | 'updatedAt' | 'workOrderNumber' | 'status';
 
   @ApiPropertyOptional({
     enum: ['asc', 'desc'],

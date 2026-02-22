@@ -197,6 +197,7 @@ let WorkOrdersService = class WorkOrdersService {
                 scheduledAt: new Date(dto.scheduledAt),
                 estimatedHours: dto.estimatedHours,
                 payRate: dto.payRate,
+                flatRate: dto.flatRate,
                 facilityName: dto.facilityName,
                 facilityAddress: dto.facilityAddress,
                 pointOfContact: dto.pointOfContact,
@@ -305,6 +306,8 @@ let WorkOrdersService = class WorkOrdersService {
             updateData.estimatedHours = dto.estimatedHours;
         if (dto.payRate !== undefined && isAdminOrManager)
             updateData.payRate = dto.payRate;
+        if (dto.flatRate !== undefined && isAdminOrManager)
+            updateData.flatRate = dto.flatRate;
         if (dto.facilityName && isAdminOrManager)
             updateData.facilityName = dto.facilityName;
         if (dto.facilityAddress && isAdminOrManager)
@@ -418,6 +421,7 @@ let WorkOrdersService = class WorkOrdersService {
                 scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : original.scheduledAt,
                 estimatedHours: original.estimatedHours,
                 payRate: original.payRate,
+                flatRate: original.flatRate,
                 facilityName: original.facilityName,
                 facilityAddress: original.facilityAddress,
                 pointOfContact: original.pointOfContact,

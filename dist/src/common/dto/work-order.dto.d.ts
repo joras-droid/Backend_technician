@@ -11,6 +11,7 @@ export declare class CreateWorkOrderDto {
     scheduledAt: string;
     estimatedHours?: number;
     payRate?: number;
+    flatRate?: number;
     facilityName: string;
     facilityAddress: string;
     pointOfContact?: string;
@@ -31,6 +32,7 @@ export declare class UpdateWorkOrderDto {
     scheduledAt?: string;
     estimatedHours?: number;
     payRate?: number;
+    flatRate?: number;
     facilityName?: string;
     facilityAddress?: string;
     pointOfContact?: string;
@@ -65,6 +67,6 @@ export declare class ListWorkOrdersQueryDto {
     workOrderNumber?: string;
     page?: number;
     limit?: number;
-    sortBy?: 'scheduledAt' | 'createdAt' | 'updatedAt' | 'workOrderNumber';
+    sortBy?: 'scheduledAt' | 'createdAt' | 'updatedAt' | 'workOrderNumber' | 'status';
     sortOrder?: 'asc' | 'desc';
 }

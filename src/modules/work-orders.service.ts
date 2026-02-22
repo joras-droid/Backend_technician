@@ -236,6 +236,7 @@ export class WorkOrdersService {
         scheduledAt: new Date(dto.scheduledAt),
         estimatedHours: dto.estimatedHours,
         payRate: dto.payRate,
+        flatRate: dto.flatRate,
         facilityName: dto.facilityName,
         facilityAddress: dto.facilityAddress,
         pointOfContact: dto.pointOfContact,
@@ -359,6 +360,7 @@ export class WorkOrdersService {
     if (dto.scheduledAt && isAdminOrManager) updateData.scheduledAt = new Date(dto.scheduledAt);
     if (dto.estimatedHours !== undefined && isAdminOrManager) updateData.estimatedHours = dto.estimatedHours;
     if (dto.payRate !== undefined && isAdminOrManager) updateData.payRate = dto.payRate;
+    if (dto.flatRate !== undefined && isAdminOrManager) updateData.flatRate = dto.flatRate;
     if (dto.facilityName && isAdminOrManager) updateData.facilityName = dto.facilityName;
     if (dto.facilityAddress && isAdminOrManager) updateData.facilityAddress = dto.facilityAddress;
     if (dto.pointOfContact !== undefined && isAdminOrManager) updateData.pointOfContact = dto.pointOfContact;
@@ -478,6 +480,7 @@ export class WorkOrdersService {
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : original.scheduledAt,
         estimatedHours: original.estimatedHours,
         payRate: original.payRate,
+        flatRate: original.flatRate,
         facilityName: original.facilityName,
         facilityAddress: original.facilityAddress,
         pointOfContact: original.pointOfContact,

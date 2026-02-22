@@ -86,6 +86,7 @@ export declare class WorkOrdersService {
             clientId: string | null;
             technicianId: string | null;
             templateId: string | null;
+            flatRate: number | null;
             beforeWorkPhotos: string[];
             afterWorkPhotos: string[];
         })[];
@@ -158,6 +159,7 @@ export declare class WorkOrdersService {
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        flatRate: number | null;
         beforeWorkPhotos: string[];
         afterWorkPhotos: string[];
     })[]>;
@@ -266,6 +268,7 @@ export declare class WorkOrdersService {
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        flatRate: number | null;
         beforeWorkPhotos: string[];
         afterWorkPhotos: string[];
     }) | null, null, import("@prisma/client/runtime/library").DefaultArgs, import(".prisma/client").Prisma.PrismaClientOptions>;
@@ -351,6 +354,7 @@ export declare class WorkOrdersService {
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        flatRate: number | null;
         beforeWorkPhotos: string[];
         afterWorkPhotos: string[];
     }>;
@@ -455,6 +459,7 @@ export declare class WorkOrdersService {
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        flatRate: number | null;
         beforeWorkPhotos: string[];
         afterWorkPhotos: string[];
     }>;
@@ -544,6 +549,7 @@ export declare class WorkOrdersService {
         clientId: string | null;
         technicianId: string | null;
         templateId: string | null;
+        flatRate: number | null;
         beforeWorkPhotos: string[];
         afterWorkPhotos: string[];
     }>;

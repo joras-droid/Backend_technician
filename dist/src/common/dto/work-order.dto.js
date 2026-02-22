@@ -59,6 +59,7 @@ class CreateWorkOrderDto {
     scheduledAt;
     estimatedHours;
     payRate;
+    flatRate;
     facilityName;
     facilityAddress;
     pointOfContact;
@@ -95,11 +96,19 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateWorkOrderDto.prototype, "estimatedHours", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 25.5, description: 'Hourly pay rate', minimum: 0 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateWorkOrderDto.prototype, "payRate", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 150, description: 'Flat rate for the work order', minimum: 0 }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], CreateWorkOrderDto.prototype, "flatRate", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -191,6 +200,7 @@ class UpdateWorkOrderDto {
     scheduledAt;
     estimatedHours;
     payRate;
+    flatRate;
     facilityName;
     facilityAddress;
     pointOfContact;
@@ -221,6 +231,12 @@ __decorate([
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], UpdateWorkOrderDto.prototype, "payRate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], UpdateWorkOrderDto.prototype, "flatRate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -456,13 +472,13 @@ __decorate([
 ], ListWorkOrdersQueryDto.prototype, "limit", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+        enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber', 'status'],
         example: 'scheduledAt',
         description: 'Sort field',
         default: 'scheduledAt',
     }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber']),
+    (0, class_validator_1.IsEnum)(['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber', 'status']),
     __metadata("design:type", String)
 ], ListWorkOrdersQueryDto.prototype, "sortBy", void 0);
 __decorate([

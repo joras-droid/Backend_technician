@@ -66,7 +66,7 @@ export class WorkOrdersController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber'],
+    enum: ['scheduledAt', 'createdAt', 'updatedAt', 'workOrderNumber', 'status'],
   })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiResponse({
