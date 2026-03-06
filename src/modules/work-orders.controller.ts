@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { WorkOrdersService } from './work-orders.service';
@@ -173,8 +174,9 @@ export class WorkOrdersController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create work order (Admin/Manager)',
-    description: 'Create a new work order and assign it to a technician',
+    description: 'Create a new work order and assign it to a technician. Work order number is auto-generated (e.g. WO-2026-001) if not provided. Retries automatically on unique constraint (race condition).',
   })
+  @ApiBody({ type: CreateWorkOrderDto })
   @ApiResponse({
     status: 201,
     description: 'Work order created successfully',

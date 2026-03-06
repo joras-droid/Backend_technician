@@ -32,16 +32,22 @@ The path can be configured via the `SWAGGER_PATH` environment variable (default:
 - **PATCH /auth/profile/image** - Update profile image URL
 
 #### 2. Users (`/users`)
+- **GET /users/me** - Get current user profile (for settings/profile page - technician, manager, admin)
 - **GET /users/technicians** - Get all technicians
 
 #### 3. Clients (`/clients`)
 - **GET /clients** - Get all clients
 
 #### 4. Work Orders (`/work-orders`)
-- **GET /work-orders/technician/:technicianId** - Get work orders for a technician
+- **POST /work-orders** - Create work order (Admin/Manager)
+- **GET /work-orders** - List all work orders with filters (Admin/Manager)
+- **GET /work-orders/technician** - Get my work orders (Technician)
+- **GET /work-orders/technician/:technicianId** - Get work orders for a technician (Admin/Manager)
 - **GET /work-orders/:id** - Get work order details
-- **POST /work-orders/:workOrderId/attachments/presigned-url** - Get presigned URL for attachment
-- **POST /work-orders/:workOrderId/attachments** - Create attachment record
+- **PATCH /work-orders/:id** - Update work order
+- **POST /work-orders/:id/duplicate** - Duplicate work order (Admin/Manager)
+- **POST /work-orders/:workOrderId/attachments/presigned-url** - Get presigned URL for attachment upload
+- **POST /work-orders/:workOrderId/attachments** - Create attachment record after S3 upload
 
 ## Authentication
 
@@ -54,6 +60,41 @@ Most endpoints require JWT authentication. To authenticate:
 5. Click **Authorize**
 
 Now you can test authenticated endpoints. The token persists during your session.
+
+## Presigned URL and Upload Media Mechanism
+
+The API uses **presigned URLs** for secure, direct-to-S3 file uploads. This approach:
+- **No file passes through the server** - files go directly from client to S3
+- **Time-limited access** - presigned URLs expire (default: 1 hour)
+- **Secure** - no need to expose S3 credentials to the client
+- **Scalable** - reduces server load for large file uploads
+
+### How It Works
+1. Client requests a presigned URL from the API (includes fileName, contentType)
+2. API generates a temporary S3 upload URL and returns it with the public URL
+3. Client uploads file directly to S3 using PUT request with the presigned URL
+4. Client uses the public URL when creating records (e.g., profile image, attachment)
+
+### Supported File Types
+- Images: `image/jpeg`, `image/png`, `image/jpg`, `image/webp`
+- Documents: `application/pdf`
+
+### Presigned URL Endpoints
+| Endpoint | Auth | Use Case |
+|----------|------|----------|
+| POST /auth/presigned-url | Public | Profile image during signup |
+| POST /auth/profile/presigned-url | JWT | Profile image update (authenticated) |
+| POST /work-orders/:workOrderId/attachments/presigned-url | JWT | Work order photos/receipts |
+
+### Response Format
+```json
+{
+  "presignedUrl": "https://bucket.s3.region.amazonaws.com/...",
+  "key": "profiles/user123/1234567890.jpg",
+  "publicUrl": "https://bucket.s3.region.amazonaws.com/...",
+  "expiresIn": 3600
+}
+```
 
 ## File Upload Flow Documentation
 
@@ -113,6 +154,59 @@ Now you can test authenticated endpoints. The token persists during your session
      "description": "Work site photo"
    }
    ```
+
+## Presigned URL and Upload Media Mechanism
+
+### How It Works
+
+The API uses **presigned URLs** for secure, direct-to-S3 file uploads. This approach:
+- **No file passes through the API server** - files go directly from client to S3
+- **Secure** - presigned URLs expire (default: 1 hour) and are single-use
+- **Scalable** - reduces server load for large file uploads
+
+### Flow Overview
+
+1. **Client requests presigned URL** - Send `fileName`, `contentType`, and `attachmentType` (or `uploadType` for profile)
+2. **API returns** - `presignedUrl` (for PUT upload), `publicUrl` (to save after upload), `key`, `expiresIn`
+3. **Client uploads to S3** - PUT request to `presignedUrl` with file in body, `Content-Type` header
+4. **Client saves reference** - Use `publicUrl` when creating the record (signup profileImageUrl, or attachment url)
+
+### Supported Endpoints
+
+| Endpoint | Use Case | Auth |
+|----------|----------|------|
+| `POST /auth/presigned-url` | Profile image during signup | Public |
+| `POST /auth/profile/presigned-url` | Profile image after signin | JWT |
+| `POST /work-orders/:id/attachments/presigned-url` | Work order photos/receipts | JWT |
+
+### Allowed File Types
+
+- Images: `image/jpeg`, `image/png`, `image/jpg`, `image/webp`
+- Documents: `application/pdf`
+
+### Work Order Create Request Body
+
+```
+POST /work-orders
+{
+  "scheduledAt": "2026-02-10T09:00:00.000Z",
+  "facilityName": "Main Office",
+  "facilityAddress": "123 Main St",
+  "facilityLat": 40.7128,
+  "facilityLng": -74.006,
+  "technicianId": "clx1234567890",
+  "clientId": "clx9876543210",
+  "workOrderNumber": "WO-2026-001",
+  "estimatedHours": 4,
+  "payRate": 25.5,
+  "pointOfContact": "John Doe",
+  "tasks": "Install equipment",
+  "notes": "Bring ladder",
+  "equipment": [
+    { "name": "Wrench Set", "quantity": 2, "cost": 45.99, "vendor": "Home Depot" }
+  ]
+}
+```
 
 ## Response Formats
 

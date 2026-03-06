@@ -21,6 +21,42 @@ export class UsersService {
     private readonly configService: ConfigService,
   ) {}
 
+  async findMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        username: true,
+        phone: true,
+        address: true,
+        profileImageUrl: true,
+        role: true,
+        defaultPayRate: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            workOrdersAssigned: true,
+            timeEntries: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      ...user,
+      workOrdersCount: user._count.workOrdersAssigned,
+      timeEntriesCount: user._count.timeEntries,
+    };
+  }
+
   findTechnicians() {
     return this.prisma.user.findMany({
       where: { role: 'TECHNICIAN' },
