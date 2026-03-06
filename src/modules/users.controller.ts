@@ -8,6 +8,7 @@ import {
   Query,
   Body,
   UseGuards,
+  Request,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -29,6 +30,7 @@ import {
   UpdateUserDto,
   ResetUserPasswordDto,
 } from '../common/dto/user-management.dto';
+import { AuthenticatedRequest } from '../common/interfaces/request.interface';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -57,6 +59,39 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   findAll(@Query() query: ListUsersQueryDto) {
     return this.usersService.findAll(query);
+  }
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get current user profile',
+    description: 'Retrieve the authenticated user\'s profile information. Used for settings/profile page. Available to all authenticated users (technician, manager, admin).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user profile',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        firstName: { type: 'string' },
+        lastName: { type: 'string' },
+        email: { type: 'string' },
+        username: { type: 'string' },
+        phone: { type: 'string' },
+        address: { type: 'string' },
+        profileImageUrl: { type: 'string' },
+        role: { type: 'string', enum: ['ADMIN', 'MANAGER', 'TECHNICIAN'] },
+        defaultPayRate: { type: 'number' },
+        workOrdersCount: { type: 'number' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getMe(@Request() req: AuthenticatedRequest) {
+    return this.usersService.findMe(req.user.id);
   }
 
   @Get('technicians')

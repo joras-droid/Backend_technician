@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateAttachmentDto,
@@ -12,6 +13,7 @@ import {
   UpdateWorkOrderDto,
   DuplicateWorkOrderDto,
 } from '../common/dto/work-order.dto';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { WorkOrderStatus, UserRole } from '@prisma/client';
 
 @Injectable()
@@ -206,31 +208,38 @@ export class WorkOrdersService {
       }
     }
 
-    // Generate work order number if not provided
+    // Generate work order number if not provided (with retry for race condition)
     let workOrderNumber = dto.workOrderNumber;
-    if (!workOrderNumber) {
-      const prefix = process.env.WORK_ORDER_PREFIX || 'WO';
-      const year = new Date().getFullYear();
-      const count = await this.prisma.workOrder.count({
-        where: {
-          workOrderNumber: {
-            startsWith: `${prefix}-${year}-`,
-          },
-        },
-      });
-      workOrderNumber = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
-    } else {
-      // Check if work order number already exists
-      const existing = await this.prisma.workOrder.findUnique({
-        where: { workOrderNumber },
-      });
-      if (existing) {
-        throw new ConflictException('Work order number already exists');
-      }
-    }
+    const maxRetries = 5;
 
-    // Create work order
-    const workOrder = await this.prisma.workOrder.create({
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (!workOrderNumber) {
+        const prefix = process.env.WORK_ORDER_PREFIX || 'WO';
+        const year = new Date().getFullYear();
+        const count = await this.prisma.workOrder.count({
+          where: {
+            workOrderNumber: {
+              startsWith: `${prefix}-${year}-`,
+            },
+          },
+        });
+        workOrderNumber = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
+      } else if (attempt > 0) {
+        // Retry with newly generated number - already validated in first attempt
+        break;
+      } else {
+        // Check if work order number already exists (user-provided)
+        const existing = await this.prisma.workOrder.findUnique({
+          where: { workOrderNumber },
+        });
+        if (existing) {
+          throw new ConflictException('Work order number already exists');
+        }
+      }
+
+      try {
+        // Create work order
+        const workOrder = await this.prisma.workOrder.create({
       data: {
         workOrderNumber,
         scheduledAt: new Date(dto.scheduledAt),
@@ -286,7 +295,26 @@ export class WorkOrdersService {
       },
     });
 
-    return workOrder;
+        return workOrder;
+      } catch (error: any) {
+        // Retry on unique constraint violation (P2002) for workOrderNumber race condition
+        if (
+          error instanceof PrismaClientKnownRequestError &&
+          error.code === 'P2002' &&
+          (error.meta?.target as string[])?.includes?.('workOrderNumber') &&
+          attempt < maxRetries - 1
+        ) {
+          workOrderNumber = undefined; // Regenerate on next iteration
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    // Should not reach here, but throw if all retries failed
+    throw new ConflictException(
+      'Unable to generate unique work order number. Please try again.',
+    );
   }
 
   async assignTechnician(
@@ -543,22 +571,27 @@ export class WorkOrdersService {
       }
     }
 
-    // Generate new work order number
+    // Generate new work order number (with retry for race condition)
     const prefix = process.env.WORK_ORDER_PREFIX || 'WO';
     const year = new Date().getFullYear();
-    const count = await this.prisma.workOrder.count({
-      where: {
-        workOrderNumber: {
-          startsWith: `${prefix}-${year}-`,
-        },
-      },
-    });
-    const workOrderNumber = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
+    const maxRetries = 5;
+    let workOrder: any;
 
-    // Create duplicate
-    const workOrder = await this.prisma.workOrder.create({
-      data: {
-        workOrderNumber,
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.prisma.workOrder.count({
+        where: {
+          workOrderNumber: {
+            startsWith: `${prefix}-${year}-`,
+          },
+        },
+      });
+      const workOrderNumber = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
+
+      try {
+        // Create duplicate
+        workOrder = await this.prisma.workOrder.create({
+          data: {
+            workOrderNumber,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : original.scheduledAt,
         estimatedHours: original.estimatedHours,
         payRate: original.payRate,
@@ -612,7 +645,23 @@ export class WorkOrdersService {
       },
     });
 
-    return workOrder;
+        return workOrder;
+      } catch (error: any) {
+        if (
+          error instanceof PrismaClientKnownRequestError &&
+          error.code === 'P2002' &&
+          (error.meta?.target as string[])?.includes?.('workOrderNumber') &&
+          attempt < maxRetries - 1
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new ConflictException(
+      'Unable to generate unique work order number. Please try again.',
+    );
   }
 
   async createAttachment(
